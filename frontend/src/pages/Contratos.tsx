@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { contratosAPI, clientesAPI, veiculosAPI } from '../services/api'
-import { Plus, Edit2, Trash2, CheckCircle, Printer, Loader2 } from 'lucide-react'
+import { contratosAPI, clientesAPI, veiculosAPI, prorrogacoesAPI } from '../services/api'
+import { Plus, Edit2, Trash2, CheckCircle, Printer, Loader2, Clock } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import Modal from '../components/Modal'
@@ -38,6 +38,14 @@ const Contratos: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [isPrinting, setIsPrinting] = useState<string | null>(null)
+  const [isProrrogarOpen, setIsProrrogarOpen] = useState(false)
+  const [prorrogarContrato, setProrrogarContrato] = useState<any>(null)
+  const [prorrogarData, setProrrogarData] = useState({
+    data_prevista_nova: '',
+    diarias_adicionais: 1,
+    valor_adicional: 0,
+    motivo: '',
+  })
   const [formData, setFormData] = useState<FormData>({
     cliente_id: '',
     veiculo_id: '',
@@ -120,6 +128,21 @@ const Contratos: React.FC = () => {
     mutationFn: (id: string) => contratosAPI.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contratos'] })
+    },
+  })
+
+  const prorrogarMutation = useMutation({
+    mutationFn: (data: any) => prorrogacoesAPI.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contratos'] })
+      setIsProrrogarOpen(false)
+      setProrrogarContrato(null)
+      setProrrogarData({
+        data_prevista_nova: '',
+        diarias_adicionais: 1,
+        valor_adicional: 0,
+        motivo: '',
+      })
     },
   })
 
@@ -253,6 +276,43 @@ const Contratos: React.FC = () => {
     } finally {
       setIsPrinting(null)
     }
+  }
+
+  const openProrrogarModal = (contrato: any) => {
+    setProrrogarContrato(contrato)
+    setProrrogarData({
+      data_prevista_nova: '',
+      diarias_adicionais: 1,
+      valor_adicional: 0,
+      motivo: '',
+    })
+    setIsProrrogarOpen(true)
+  }
+
+  const handleProrrogarInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value, type } = e.target
+    const newValue = type === 'number' ? parseFloat(value) || 0 : value
+    setProrrogarData((prev) => {
+      const updated = { ...prev, [name]: newValue }
+      if (name === 'diarias_adicionais' && prorrogarContrato) {
+        updated.valor_adicional = updated.diarias_adicionais * (prorrogarContrato.valor_diaria || 0)
+      }
+      return updated
+    })
+  }
+
+  const handleSubmitProrrogar = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!prorrogarContrato) return
+    const payload = {
+      contrato_id: prorrogarContrato.id,
+      data_prevista_anterior: prorrogarContrato.data_prevista_devolucao,
+      data_prevista_nova: prorrogarData.data_prevista_nova,
+      motivo: prorrogarData.motivo,
+      diarias_adicionais: prorrogarData.diarias_adicionais,
+      valor_adicional: prorrogarData.valor_adicional,
+    }
+    prorrogarMutation.mutate(payload)
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -398,13 +458,22 @@ const Contratos: React.FC = () => {
                           <Trash2 size={18} />
                         </button>
                         {(contrato.status === 'Ativo' || contrato.status === 'ativo') && (
-                          <button
-                            onClick={() => handleFinalize(contrato.id)}
-                            className="p-2 text-success hover:bg-green-50 rounded-lg transition-colors"
-                            title="Finalizar"
-                          >
-                            <CheckCircle size={18} />
-                          </button>
+                          <>
+                            <button
+                              onClick={() => openProrrogarModal(contrato)}
+                              className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                              title="Prorrogar"
+                            >
+                              <Clock size={18} />
+                            </button>
+                            <button
+                              onClick={() => handleFinalize(contrato.id)}
+                              className="p-2 text-success hover:bg-green-50 rounded-lg transition-colors"
+                              title="Finalizar"
+                            >
+                              <CheckCircle size={18} />
+                            </button>
+                          </>
                         )}
                       </div>
                     </td>
@@ -569,6 +638,90 @@ const Contratos: React.FC = () => {
               className="flex-1 px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
             >
               {createMutation.isPending || updateMutation.isPending ? 'Salvando...' : editingId ? 'Atualizar' : 'Criar Contrato'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal - Prorrogação */}
+      <Modal
+        isOpen={isProrrogarOpen}
+        onClose={() => setIsProrrogarOpen(false)}
+        title="Prorrogar Contrato"
+        size="sm"
+      >
+        <form onSubmit={handleSubmitProrrogar} className="space-y-4">
+          {prorrogarContrato && (
+            <div className="bg-gray-50 p-3 rounded-lg mb-4">
+              <p className="text-xs text-gray-600">Contrato ID: <span className="font-bold text-primary">#{prorrogarContrato.id}</span></p>
+              <p className="text-xs text-gray-600">Data Devolução Atual: <span className="font-bold">{format(new Date(prorrogarContrato.data_prevista_devolucao), 'dd/MM/yyyy', { locale: ptBR })}</span></p>
+              <p className="text-xs text-gray-600">Valor Diária: <span className="font-bold">R$ {prorrogarContrato.valor_diaria?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span></p>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Nova Data de Devolução *</label>
+            <input
+              type="date"
+              name="data_prevista_nova"
+              value={prorrogarData.data_prevista_nova}
+              onChange={handleProrrogarInputChange}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Diárias Adicionais *</label>
+            <input
+              type="number"
+              name="diarias_adicionais"
+              value={prorrogarData.diarias_adicionais}
+              onChange={handleProrrogarInputChange}
+              required
+              min="1"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Valor Adicional (R$)</label>
+            <input
+              type="number"
+              name="valor_adicional"
+              value={prorrogarData.valor_adicional}
+              readOnly
+              step="0.01"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-100 focus:ring-2 focus:ring-primary"
+            />
+            <p className="text-xs text-gray-500 mt-1">Auto-calculado: diárias adicionais × valor diária</p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Motivo da Prorrogação</label>
+            <textarea
+              name="motivo"
+              value={prorrogarData.motivo}
+              onChange={handleProrrogarInputChange}
+              rows={2}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary"
+            />
+          </div>
+
+          <div className="flex gap-2 pt-4 border-t">
+            <button
+              type="button"
+              onClick={() => setIsProrrogarOpen(false)}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={prorrogarMutation.isPending}
+              className="flex-1 px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+            >
+              {prorrogarMutation.isPending ? 'Prorrogando...' : 'Prorrogar'}
             </button>
           </div>
         </form>

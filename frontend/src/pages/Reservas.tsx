@@ -1,8 +1,21 @@
 import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { reservasAPI, clientesAPI, veiculosAPI } from '../services/api'
-import { Plus, Edit2, Trash2 } from 'lucide-react'
-import { format } from 'date-fns'
+import { Plus, Edit2, Trash2, ChevronLeft, ChevronRight, List, Calendar } from 'lucide-react'
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  startOfWeek,
+  endOfWeek,
+  eachDayOfInterval,
+  isSameMonth,
+  isSameDay,
+  addMonths,
+  subMonths,
+  isWithinInterval,
+  parseISO,
+} from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import Modal from '../components/Modal'
 
@@ -12,7 +25,11 @@ interface Reserva {
   veiculo_id: string
   data_inicio: string
   data_fim: string
-  status: 'confirmada' | 'cancelada' | 'concluida'
+  valor_estimado?: number
+  status: 'Pendente' | 'Confirmada' | 'Cancelada' | 'Convertida' | 'confirmada' | 'cancelada' | 'concluida'
+  observacoes?: string
+  cliente_nome?: string
+  veiculo_nome?: string
 }
 
 interface FormData {
@@ -20,19 +37,26 @@ interface FormData {
   veiculo_id: string
   data_inicio: string
   data_fim: string
+  valor_estimado: string
   status: string
+  observacoes: string
 }
 
 const Reservas: React.FC = () => {
   const queryClient = useQueryClient()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingReserva, setEditingReserva] = useState<Reserva | null>(null)
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list')
+  const [currentMonth, setCurrentMonth] = useState(new Date())
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null)
   const [formData, setFormData] = useState<FormData>({
     cliente_id: '',
     veiculo_id: '',
     data_inicio: '',
     data_fim: '',
-    status: 'confirmada',
+    valor_estimado: '',
+    status: 'Confirmada',
+    observacoes: '',
   })
 
   const { data: reservasData, isLoading } = useQuery({
@@ -101,6 +125,8 @@ const Reservas: React.FC = () => {
     'Concluída': { label: 'Concluída', color: 'text-gray-600', bgColor: 'bg-gray-100' },
     pendente: { label: 'Pendente', color: 'text-warning', bgColor: 'bg-yellow-100' },
     Pendente: { label: 'Pendente', color: 'text-warning', bgColor: 'bg-yellow-100' },
+    convertida: { label: 'Convertida', color: 'text-blue-600', bgColor: 'bg-blue-100' },
+    Convertida: { label: 'Convertida', color: 'text-blue-600', bgColor: 'bg-blue-100' },
   }
   const defaultStatus = { label: 'Desconhecido', color: 'text-gray-600', bgColor: 'bg-gray-100' }
 
@@ -110,9 +136,28 @@ const Reservas: React.FC = () => {
       veiculo_id: '',
       data_inicio: '',
       data_fim: '',
-      status: 'confirmada',
+      valor_estimado: '',
+      status: 'Confirmada',
+      observacoes: '',
     })
     setEditingReserva(null)
+  }
+
+  const getReservasForDay = (day: Date): Reserva[] => {
+    return reservas.filter((r) => {
+      const inicio = parseISO(r.data_inicio)
+      const fim = parseISO(r.data_fim)
+      return isWithinInterval(day, { start: inicio, end: fim })
+    })
+  }
+
+  const getStatusColor = (status: string): string => {
+    const normalizedStatus = status.toLowerCase()
+    if (normalizedStatus.includes('pendente')) return 'bg-yellow-100 text-yellow-800'
+    if (normalizedStatus.includes('confirmada')) return 'bg-green-100 text-green-800'
+    if (normalizedStatus.includes('cancelada')) return 'bg-red-100 text-red-800'
+    if (normalizedStatus.includes('convertida')) return 'bg-blue-100 text-blue-800'
+    return 'bg-gray-100 text-gray-800'
   }
 
   const handleOpenModal = (reserva?: Reserva) => {
@@ -165,73 +210,270 @@ const Reservas: React.FC = () => {
         </button>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-lg shadow overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Cliente</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Veículo</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Data Início</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Data Fim</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Status</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Ações</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {isLoading ? (
+      {/* View Mode Toggle */}
+      <div className="flex gap-2 bg-white rounded-lg shadow p-2 w-fit">
+        <button
+          onClick={() => setViewMode('list')}
+          className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors ${
+            viewMode === 'list'
+              ? 'bg-primary text-white'
+              : 'text-gray-700 hover:bg-gray-100'
+          }`}
+        >
+          <List size={18} />
+          Lista
+        </button>
+        <button
+          onClick={() => setViewMode('calendar')}
+          className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors ${
+            viewMode === 'calendar'
+              ? 'bg-primary text-white'
+              : 'text-gray-700 hover:bg-gray-100'
+          }`}
+        >
+          <Calendar size={18} />
+          Calendário
+        </button>
+      </div>
+
+      {/* List View */}
+      {viewMode === 'list' && (
+        <div className="bg-white rounded-lg shadow overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
-                  Carregando...
-                </td>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Cliente</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Veículo</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Data Início</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Data Fim</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Valor Estimado</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Status</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Ações</th>
               </tr>
-            ) : reservas.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
-                  Nenhuma reserva encontrada
-                </td>
-              </tr>
-            ) : (
-              reservas.map((reserva) => {
-                const status = statusConfig[reserva.status] || defaultStatus
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {isLoading ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                    Carregando...
+                  </td>
+                </tr>
+              ) : reservas.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                    Nenhuma reserva encontrada
+                  </td>
+                </tr>
+              ) : (
+                reservas.map((reserva) => {
+                  const status = statusConfig[reserva.status] || defaultStatus
+                  return (
+                    <tr key={reserva.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 text-sm font-medium text-gray-900">{reserva.cliente_nome || reserva.cliente_id}</td>
+                      <td className="px-6 py-4 text-sm text-gray-700">{reserva.veiculo_nome || reserva.veiculo_id}</td>
+                      <td className="px-6 py-4 text-sm text-gray-700">
+                        {format(new Date(reserva.data_inicio), 'dd/MM/yyyy', { locale: ptBR })}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-700">
+                        {format(new Date(reserva.data_fim), 'dd/MM/yyyy', { locale: ptBR })}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-700">
+                        {reserva.valor_estimado ? `R$ ${reserva.valor_estimado.toFixed(2)}` : '-'}
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${status.bgColor} ${status.color}`}>
+                          {status.label}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleOpenModal(reserva)}
+                            className="p-2 text-primary hover:bg-blue-50 rounded-lg transition-colors"
+                          >
+                            <Edit2 size={18} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(reserva.id)}
+                            className="p-2 text-danger hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Calendar View */}
+      {viewMode === 'calendar' && (
+        <div className="bg-white rounded-lg shadow p-6">
+          {/* Calendar Header */}
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">
+              {format(currentMonth, 'MMMM yyyy', { locale: ptBR })}
+            </h2>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <ChevronLeft size={24} />
+              </button>
+              <button
+                onClick={() => setCurrentMonth(new Date())}
+                className="px-4 py-2 hover:bg-gray-100 rounded-lg transition-colors text-sm font-medium"
+              >
+                Hoje
+              </button>
+              <button
+                onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <ChevronRight size={24} />
+              </button>
+            </div>
+          </div>
+
+          {/* Calendar Grid */}
+          <div className="grid grid-cols-7 gap-px bg-gray-200 rounded-lg overflow-hidden">
+            {/* Header Row - Days of Week */}
+            {['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map((day) => (
+              <div
+                key={day}
+                className="bg-gray-50 p-3 text-center text-xs font-semibold text-gray-600"
+              >
+                {day}
+              </div>
+            ))}
+
+            {/* Calendar Days */}
+            {(() => {
+              const monthStart = startOfMonth(currentMonth)
+              const monthEnd = endOfMonth(currentMonth)
+              const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 })
+              const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 })
+              const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd })
+
+              return calendarDays.map((day) => {
+                const dayReservas = getReservasForDay(day)
+                const isCurrentMonth = isSameMonth(day, currentMonth)
+                const isToday = isSameDay(day, new Date())
+                const isSelected = selectedDay && isSameDay(day, selectedDay)
+
                 return (
-                  <tr key={reserva.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{reserva.cliente_id}</td>
-                    <td className="px-6 py-4 text-sm text-gray-700">{reserva.veiculo_id}</td>
-                    <td className="px-6 py-4 text-sm text-gray-700">
-                      {format(new Date(reserva.data_inicio), 'dd/MM/yyyy', { locale: ptBR })}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-700">
-                      {format(new Date(reserva.data_fim), 'dd/MM/yyyy', { locale: ptBR })}
-                    </td>
-                    <td className="px-6 py-4 text-sm">
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${status.bgColor} ${status.color}`}>
-                        {status.label}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm">
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleOpenModal(reserva)}
-                          className="p-2 text-primary hover:bg-blue-50 rounded-lg transition-colors"
-                        >
-                          <Edit2 size={18} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(reserva.id)}
-                          className="p-2 text-danger hover:bg-red-50 rounded-lg transition-colors"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                  <div
+                    key={day.toISOString()}
+                    onClick={() => setSelectedDay(isSelected ? null : day)}
+                    className={`bg-white p-2 min-h-[100px] cursor-pointer border-2 transition-all ${
+                      !isCurrentMonth ? 'opacity-40 bg-gray-50' : ''
+                    } ${isToday ? 'border-blue-500 bg-blue-50' : isSelected ? 'border-primary bg-primary-50' : 'border-transparent hover:border-gray-300'}`}
+                  >
+                    <div className={`text-xs font-bold mb-1 ${isToday ? 'text-blue-600' : 'text-gray-900'}`}>
+                      {format(day, 'd')}
+                    </div>
+                    <div className="space-y-1">
+                      {dayReservas.slice(0, 2).map((r) => {
+                        const status = statusConfig[r.status] || defaultStatus
+                        return (
+                          <div
+                            key={r.id}
+                            className={`text-[10px] truncate px-1.5 py-0.5 rounded ${status.bgColor}`}
+                            title={r.cliente_nome || r.cliente_id}
+                          >
+                            {r.cliente_nome || r.cliente_id}
+                          </div>
+                        )
+                      })}
+                      {dayReservas.length > 2 && (
+                        <span className="text-[10px] text-gray-500 px-1">
+                          +{dayReservas.length - 2} mais
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 )
               })
-            )}
-          </tbody>
-        </table>
-      </div>
+            })()}
+          </div>
+
+          {/* Selected Day Details */}
+          {selectedDay && (
+            <div className="mt-6 pt-6 border-t">
+              <h3 className="font-semibold text-gray-900 mb-4">
+                Reservas em {format(selectedDay, 'dd/MM/yyyy', { locale: ptBR })}
+              </h3>
+              {getReservasForDay(selectedDay).length === 0 ? (
+                <p className="text-gray-500 text-sm">Nenhuma reserva neste dia</p>
+              ) : (
+                <div className="space-y-3">
+                  {getReservasForDay(selectedDay).map((reserva) => {
+                    const status = statusConfig[reserva.status] || defaultStatus
+                    return (
+                      <div key={reserva.id} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <p className="font-medium text-gray-900">
+                              {reserva.cliente_nome || reserva.cliente_id}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              {reserva.veiculo_nome || reserva.veiculo_id}
+                            </p>
+                          </div>
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${status.bgColor} ${status.color}`}>
+                            {status.label}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 text-sm text-gray-600 mb-2">
+                          <div>
+                            <span className="text-gray-500">Início:</span>{' '}
+                            {format(new Date(reserva.data_inicio), 'dd/MM/yyyy', { locale: ptBR })}
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Fim:</span>{' '}
+                            {format(new Date(reserva.data_fim), 'dd/MM/yyyy', { locale: ptBR })}
+                          </div>
+                        </div>
+                        {reserva.valor_estimado && (
+                          <p className="text-sm text-gray-600 mb-3">
+                            <span className="text-gray-500">Valor:</span> R$ {reserva.valor_estimado.toFixed(2)}
+                          </p>
+                        )}
+                        {reserva.observacoes && (
+                          <p className="text-sm text-gray-600 mb-3 bg-gray-50 p-2 rounded">
+                            {reserva.observacoes}
+                          </p>
+                        )}
+                        <div className="flex gap-2 pt-3 border-t">
+                          <button
+                            onClick={() => handleOpenModal(reserva)}
+                            className="px-3 py-1 text-sm text-primary hover:bg-blue-50 rounded transition-colors flex items-center gap-1"
+                          >
+                            <Edit2 size={16} />
+                            Editar
+                          </button>
+                          <button
+                            onClick={() => handleDelete(reserva.id)}
+                            className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded transition-colors flex items-center gap-1"
+                          >
+                            <Trash2 size={16} />
+                            Deletar
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Modal */}
       <Modal
@@ -303,16 +545,40 @@ const Reservas: React.FC = () => {
           </div>
 
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Valor Estimado</label>
+            <input
+              type="number"
+              step="0.01"
+              value={formData.valor_estimado}
+              onChange={(e) => setFormData({ ...formData, valor_estimado: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="0.00"
+            />
+          </div>
+
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
             <select
               value={formData.status}
               onChange={(e) => setFormData({ ...formData, status: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
             >
-              <option value="confirmada">Confirmada</option>
-              <option value="cancelada">Cancelada</option>
-              <option value="concluida">Concluída</option>
+              <option value="Pendente">Pendente</option>
+              <option value="Confirmada">Confirmada</option>
+              <option value="Cancelada">Cancelada</option>
+              <option value="Convertida">Convertida</option>
             </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Observações</label>
+            <textarea
+              value={formData.observacoes}
+              onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              rows={4}
+              placeholder="Adicione observações sobre a reserva..."
+            />
           </div>
 
           <div className="flex gap-3 pt-4 border-t">

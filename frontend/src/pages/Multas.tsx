@@ -9,20 +9,32 @@ import Modal from '../components/Modal'
 interface Multa {
   id: string
   veiculo_id: string
-  numero_infracao: string
+  contrato_id: string
+  cliente_id: string
+  auto_infracao: string
   valor: number
   data_infracao: string
-  data_vencimento: string
-  status: 'pago' | 'pendente' | 'vencido'
+  data_notificacao: string
+  pontos: number
+  gravidade: string
+  responsavel: string
+  data_pagamento?: string
+  status: string
   descricao: string
 }
 
 interface FormData {
   veiculo_id: string
-  numero_infracao: string
+  contrato_id: number
+  cliente_id: number
+  auto_infracao: string
   valor: number
   data_infracao: string
-  data_vencimento: string
+  data_notificacao: string
+  pontos: number
+  gravidade: string
+  responsavel: string
+  data_pagamento: string
   status: string
   descricao: string
 }
@@ -33,11 +45,17 @@ const Multas: React.FC = () => {
   const [editingMulta, setEditingMulta] = useState<Multa | null>(null)
   const [formData, setFormData] = useState<FormData>({
     veiculo_id: '',
-    numero_infracao: '',
+    contrato_id: 0,
+    cliente_id: 0,
+    auto_infracao: '',
     valor: 0,
     data_infracao: '',
-    data_vencimento: '',
-    status: 'pendente',
+    data_notificacao: '',
+    pontos: 0,
+    gravidade: 'Leve',
+    responsavel: '',
+    data_pagamento: '',
+    status: 'Pendente',
     descricao: '',
   })
 
@@ -89,7 +107,11 @@ const Multas: React.FC = () => {
   const veiculos = veiculosData?.items || []
 
   const statusConfig: Record<string, { label: string; color: string; bgColor: string }> = {
-    pago: { label: 'Pago', color: 'text-success', bgColor: 'bg-green-100' },
+    'Paga': { label: 'Paga', color: 'text-success', bgColor: 'bg-green-100' },
+    'Pendente': { label: 'Pendente', color: 'text-warning', bgColor: 'bg-yellow-100' },
+    'Recorrida': { label: 'Recorrida', color: 'text-blue-600', bgColor: 'bg-blue-100' },
+    'Cancelada': { label: 'Cancelada', color: 'text-danger', bgColor: 'bg-red-100' },
+    pago: { label: 'Paga', color: 'text-success', bgColor: 'bg-green-100' },
     pendente: { label: 'Pendente', color: 'text-warning', bgColor: 'bg-yellow-100' },
     vencido: { label: 'Vencido', color: 'text-danger', bgColor: 'bg-red-100' },
   }
@@ -97,11 +119,17 @@ const Multas: React.FC = () => {
   const resetForm = () => {
     setFormData({
       veiculo_id: '',
-      numero_infracao: '',
+      contrato_id: 0,
+      cliente_id: 0,
+      auto_infracao: '',
       valor: 0,
       data_infracao: '',
-      data_vencimento: '',
-      status: 'pendente',
+      data_notificacao: '',
+      pontos: 0,
+      gravidade: 'Leve',
+      responsavel: '',
+      data_pagamento: '',
+      status: 'Pendente',
       descricao: '',
     })
     setEditingMulta(null)
@@ -112,10 +140,16 @@ const Multas: React.FC = () => {
       setEditingMulta(multa)
       setFormData({
         veiculo_id: multa.veiculo_id,
-        numero_infracao: multa.numero_infracao,
+        contrato_id: parseInt(multa.contrato_id as any) || 0,
+        cliente_id: parseInt(multa.cliente_id as any) || 0,
+        auto_infracao: multa.auto_infracao,
         valor: multa.valor,
         data_infracao: multa.data_infracao,
-        data_vencimento: multa.data_vencimento,
+        data_notificacao: multa.data_notificacao,
+        pontos: multa.pontos,
+        gravidade: multa.gravidade,
+        responsavel: multa.responsavel,
+        data_pagamento: multa.data_pagamento || '',
         status: multa.status,
         descricao: multa.descricao,
       })
@@ -165,10 +199,11 @@ const Multas: React.FC = () => {
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Veículo</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Nº Infração</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Auto</th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Valor</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Data Infração</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Vencimento</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Pontos</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Gravidade</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Data Notificação</th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Status</th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Ações</th>
             </tr>
@@ -176,31 +211,30 @@ const Multas: React.FC = () => {
           <tbody className="divide-y divide-gray-200">
             {isLoading ? (
               <tr>
-                <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
                   Carregando...
                 </td>
               </tr>
             ) : multas.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
                   Nenhuma multa encontrada
                 </td>
               </tr>
             ) : (
               multas.map((multa) => {
-                const status = statusConfig[multa.status]
+                const status = statusConfig[multa.status] || statusConfig['Pendente']
                 return (
                   <tr key={multa.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">{multa.veiculo_id}</td>
-                    <td className="px-6 py-4 text-sm text-gray-700 font-mono">{multa.numero_infracao}</td>
+                    <td className="px-6 py-4 text-sm text-gray-700 font-mono">{multa.auto_infracao}</td>
                     <td className="px-6 py-4 text-sm font-semibold text-gray-900">
                       R$ {multa.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </td>
+                    <td className="px-6 py-4 text-sm text-gray-700">{multa.pontos}</td>
+                    <td className="px-6 py-4 text-sm text-gray-700">{multa.gravidade}</td>
                     <td className="px-6 py-4 text-sm text-gray-700">
-                      {format(new Date(multa.data_infracao), 'dd/MM/yyyy', { locale: ptBR })}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-700">
-                      {format(new Date(multa.data_vencimento), 'dd/MM/yyyy', { locale: ptBR })}
+                      {multa.data_notificacao ? format(new Date(multa.data_notificacao), 'dd/MM/yyyy', { locale: ptBR }) : '-'}
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold ${status.bgColor} ${status.color}`}>
@@ -241,7 +275,7 @@ const Multas: React.FC = () => {
         title={editingMulta ? 'Editar Multa' : 'Nova Multa'}
         size="lg"
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="max-h-[70vh] overflow-y-auto space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Veículo</label>
@@ -260,11 +294,32 @@ const Multas: React.FC = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nº Infração</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">ID do Contrato</label>
+              <input
+                type="number"
+                value={formData.contrato_id}
+                onChange={(e) => setFormData({ ...formData, contrato_id: parseInt(e.target.value) })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">ID do Cliente</label>
+              <input
+                type="number"
+                value={formData.cliente_id}
+                onChange={(e) => setFormData({ ...formData, cliente_id: parseInt(e.target.value) })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Auto de Infração</label>
               <input
                 type="text"
-                value={formData.numero_infracao}
-                onChange={(e) => setFormData({ ...formData, numero_infracao: e.target.value })}
+                value={formData.auto_infracao}
+                onChange={(e) => setFormData({ ...formData, auto_infracao: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                 required
               />
@@ -273,7 +328,7 @@ const Multas: React.FC = () => {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Valor</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Valor (R$)</label>
               <input
                 type="number"
                 step="0.01"
@@ -284,7 +339,19 @@ const Multas: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Data Infração</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Pontos na CNH</label>
+              <input
+                type="number"
+                value={formData.pontos}
+                onChange={(e) => setFormData({ ...formData, pontos: parseInt(e.target.value) })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Data da Infração</label>
               <input
                 type="date"
                 value={formData.data_infracao}
@@ -293,17 +360,52 @@ const Multas: React.FC = () => {
                 required
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Data da Notificação</label>
+              <input
+                type="date"
+                value={formData.data_notificacao}
+                onChange={(e) => setFormData({ ...formData, data_notificacao: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                required
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Data Vencimento</label>
-              <input
-                type="date"
-                value={formData.data_vencimento}
-                onChange={(e) => setFormData({ ...formData, data_vencimento: e.target.value })}
+              <label className="block text-sm font-medium text-gray-700 mb-1">Gravidade</label>
+              <select
+                value={formData.gravidade}
+                onChange={(e) => setFormData({ ...formData, gravidade: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                 required
+              >
+                <option value="Leve">Leve</option>
+                <option value="Média">Média</option>
+                <option value="Grave">Grave</option>
+                <option value="Gravíssima">Gravíssima</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Responsável</label>
+              <input
+                type="text"
+                value={formData.responsavel}
+                onChange={(e) => setFormData({ ...formData, responsavel: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Data Pagamento</label>
+              <input
+                type="date"
+                value={formData.data_pagamento}
+                onChange={(e) => setFormData({ ...formData, data_pagamento: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </div>
             <div>
@@ -313,9 +415,10 @@ const Multas: React.FC = () => {
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
               >
-                <option value="pago">Pago</option>
-                <option value="pendente">Pendente</option>
-                <option value="vencido">Vencido</option>
+                <option value="Pendente">Pendente</option>
+                <option value="Paga">Paga</option>
+                <option value="Recorrida">Recorrida</option>
+                <option value="Cancelada">Cancelada</option>
               </select>
             </div>
           </div>

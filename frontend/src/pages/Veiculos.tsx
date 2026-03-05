@@ -33,6 +33,22 @@ interface FormData {
   tipo_veiculo: string
   chassi?: string
   renavam?: string
+  valor_venal: number
+  preco_compra: number
+  data_compra: string
+  km_referencia: number
+  valor_km_extra: number
+  km_inicio_empresa: number
+  observacoes: string
+  macaco: boolean
+  estepe: boolean
+  ferram: boolean
+  triangulo: boolean
+  documento: boolean
+  extintor: boolean
+  calotas: boolean
+  tapetes: boolean
+  cd_player: boolean
 }
 
 type StatusFilter = 'todos' | 'disponivel' | 'alugado' | 'manutencao'
@@ -55,6 +71,22 @@ const Veiculos: React.FC = () => {
     tipo_veiculo: '',
     chassi: '',
     renavam: '',
+    valor_venal: 0,
+    preco_compra: 0,
+    data_compra: '',
+    km_referencia: 0,
+    valor_km_extra: 1.0,
+    km_inicio_empresa: 0,
+    observacoes: '',
+    macaco: false,
+    estepe: false,
+    ferram: false,
+    triangulo: false,
+    documento: false,
+    extintor: false,
+    calotas: false,
+    tapetes: false,
+    cd_player: false,
   })
 
   const { data: veiculosData, isLoading } = useQuery({
@@ -135,6 +167,22 @@ const Veiculos: React.FC = () => {
       tipo_veiculo: '',
       chassi: '',
       renavam: '',
+      valor_venal: 0,
+      preco_compra: 0,
+      data_compra: '',
+      km_referencia: 0,
+      valor_km_extra: 1.0,
+      km_inicio_empresa: 0,
+      observacoes: '',
+      macaco: false,
+      estepe: false,
+      ferram: false,
+      triangulo: false,
+      documento: false,
+      extintor: false,
+      calotas: false,
+      tapetes: false,
+      cd_player: false,
     })
     setEditingVeiculo(null)
   }
@@ -155,6 +203,22 @@ const Veiculos: React.FC = () => {
         tipo_veiculo: veiculo.tipo_veiculo,
         chassi: veiculo.chassi || '',
         renavam: veiculo.renavam || '',
+        valor_venal: 0,
+        preco_compra: 0,
+        data_compra: '',
+        km_referencia: 0,
+        valor_km_extra: 1.0,
+        km_inicio_empresa: 0,
+        observacoes: '',
+        macaco: false,
+        estepe: false,
+        ferram: false,
+        triangulo: false,
+        documento: false,
+        extintor: false,
+        calotas: false,
+        tapetes: false,
+        cd_player: false,
       })
     } else {
       resetForm()
@@ -312,7 +376,7 @@ const Veiculos: React.FC = () => {
         title={editingVeiculo ? 'Editar Veículo' : 'Novo Veículo'}
         size="lg"
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="max-h-[70vh] overflow-y-auto space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Marca</label>
@@ -461,6 +525,190 @@ const Veiculos: React.FC = () => {
                 onChange={(e) => setFormData({ ...formData, renavam: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
               />
+            </div>
+          </div>
+
+          {/* Informações de Valor */}
+          <div className="border-t pt-4">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">Informações de Valor</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Valor Venal (FIPE)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formData.valor_venal}
+                  onChange={(e) => setFormData({ ...formData, valor_venal: parseFloat(e.target.value) })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Preço de Compra</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formData.preco_compra}
+                  onChange={(e) => setFormData({ ...formData, preco_compra: parseFloat(e.target.value) })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Informações de Quilometragem */}
+          <div className="border-t pt-4">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">Informações de Quilometragem</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Data da Compra</label>
+                <input
+                  type="date"
+                  value={formData.data_compra}
+                  onChange={(e) => setFormData({ ...formData, data_compra: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">KM Referência</label>
+                <input
+                  type="number"
+                  value={formData.km_referencia}
+                  onChange={(e) => setFormData({ ...formData, km_referencia: parseInt(e.target.value) })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4 mt-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Valor KM Extra</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formData.valor_km_extra}
+                  onChange={(e) => setFormData({ ...formData, valor_km_extra: parseFloat(e.target.value) })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">KM Início Empresa</label>
+                <input
+                  type="number"
+                  value={formData.km_inicio_empresa}
+                  onChange={(e) => setFormData({ ...formData, km_inicio_empresa: parseInt(e.target.value) })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Observações */}
+          <div className="border-t pt-4">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">Observações</h3>
+            <div>
+              <textarea
+                value={formData.observacoes}
+                onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                rows={3}
+                placeholder="Observações adicionais sobre o veículo"
+              />
+            </div>
+          </div>
+
+          {/* Vistoria */}
+          <div className="border-t pt-4">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">Vistoria</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  name="macaco"
+                  checked={formData.macaco}
+                  onChange={(e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.checked }))}
+                  className="rounded border-gray-300"
+                />
+                Macaco
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  name="estepe"
+                  checked={formData.estepe}
+                  onChange={(e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.checked }))}
+                  className="rounded border-gray-300"
+                />
+                Estepe
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  name="ferram"
+                  checked={formData.ferram}
+                  onChange={(e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.checked }))}
+                  className="rounded border-gray-300"
+                />
+                Ferramentas
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  name="triangulo"
+                  checked={formData.triangulo}
+                  onChange={(e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.checked }))}
+                  className="rounded border-gray-300"
+                />
+                Triângulo
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  name="documento"
+                  checked={formData.documento}
+                  onChange={(e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.checked }))}
+                  className="rounded border-gray-300"
+                />
+                Documento
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  name="extintor"
+                  checked={formData.extintor}
+                  onChange={(e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.checked }))}
+                  className="rounded border-gray-300"
+                />
+                Extintor
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  name="calotas"
+                  checked={formData.calotas}
+                  onChange={(e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.checked }))}
+                  className="rounded border-gray-300"
+                />
+                Calotas
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  name="tapetes"
+                  checked={formData.tapetes}
+                  onChange={(e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.checked }))}
+                  className="rounded border-gray-300"
+                />
+                Tapetes
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  name="cd_player"
+                  checked={formData.cd_player}
+                  onChange={(e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.checked }))}
+                  className="rounded border-gray-300"
+                />
+                CD Player/Som
+              </label>
             </div>
           </div>
 

@@ -124,6 +124,18 @@ export const segurosAPI = {
   delete: (id: string) => api.delete(`/seguros/${id}`),
 }
 
+// Parcelas Seguro API calls
+export const parcelasSeguroAPI = {
+  list: (params?: Record<string, any>) =>
+    api.get('/parcelas-seguro/', { params }),
+  get: (id: string) => api.get(`/parcelas-seguro/${id}`),
+  create: (data: Record<string, any>) =>
+    api.post('/parcelas-seguro/', data),
+  update: (id: string, data: Record<string, any>) =>
+    api.put(`/parcelas-seguro/${id}`, data),
+  delete: (id: string) => api.delete(`/parcelas-seguro/${id}`),
+}
+
 // IPVA API calls
 export const ipvaAPI = {
   list: (params?: Record<string, any>) =>
@@ -199,6 +211,12 @@ export const alertasAPI = {
   gerar: () => api.get('/alertas/gerar/alertas'),
   resolver: (id: string, data: Record<string, any>) =>
     api.put(`/alertas/${id}/resolver`, data),
+}
+
+// Prorrogações API calls
+export const prorrogacoesAPI = {
+  list: (params?: any) => api.get('/prorrogacoes/', { params }),
+  create: (data: any) => api.post('/prorrogacoes/', data),
 }
 
 export default api

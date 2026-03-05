@@ -10,19 +10,25 @@ interface Manutencao {
   id: string
   veiculo_id: string
   tipo: string
-  valor: number
-  data_inicio: string
-  data_conclusao?: string
-  status: 'em_andamento' | 'concluida' | 'cancelada'
+  custo: number
+  data_realizada: string
+  data_proxima?: string
+  km_realizada: number
+  km_proxima: number
+  oficina: string
+  status: string
   descricao: string
 }
 
 interface FormData {
   veiculo_id: string
   tipo: string
-  valor: number
-  data_inicio: string
-  data_conclusao: string
+  custo: number
+  data_realizada: string
+  data_proxima: string
+  km_realizada: number
+  km_proxima: number
+  oficina: string
   status: string
   descricao: string
 }
@@ -33,11 +39,14 @@ const Manutencoes: React.FC = () => {
   const [editingManutencao, setEditingManutencao] = useState<Manutencao | null>(null)
   const [formData, setFormData] = useState<FormData>({
     veiculo_id: '',
-    tipo: '',
-    valor: 0,
-    data_inicio: '',
-    data_conclusao: '',
-    status: 'em_andamento',
+    tipo: 'Preventiva',
+    custo: 0,
+    data_realizada: '',
+    data_proxima: '',
+    km_realizada: 0,
+    km_proxima: 0,
+    oficina: '',
+    status: 'Agendada',
     descricao: '',
   })
 
@@ -89,29 +98,30 @@ const Manutencoes: React.FC = () => {
   const veiculos = veiculosData?.items || []
 
   const statusConfig: Record<string, { label: string; color: string; bgColor: string }> = {
-    em_andamento: { label: 'Em Andamento', color: 'text-warning', bgColor: 'bg-yellow-100' },
-    Em_Andamento: { label: 'Em Andamento', color: 'text-warning', bgColor: 'bg-yellow-100' },
-    'Em Andamento': { label: 'Em Andamento', color: 'text-warning', bgColor: 'bg-yellow-100' },
-    concluida: { label: 'Concluída', color: 'text-success', bgColor: 'bg-green-100' },
-    Concluida: { label: 'Concluída', color: 'text-success', bgColor: 'bg-green-100' },
-    'Concluída': { label: 'Concluída', color: 'text-success', bgColor: 'bg-green-100' },
-    cancelada: { label: 'Cancelada', color: 'text-danger', bgColor: 'bg-red-100' },
-    Cancelada: { label: 'Cancelada', color: 'text-danger', bgColor: 'bg-red-100' },
+    'Agendada': { label: 'Agendada', color: 'text-blue-600', bgColor: 'bg-blue-100' },
     agendada: { label: 'Agendada', color: 'text-blue-600', bgColor: 'bg-blue-100' },
-    Agendada: { label: 'Agendada', color: 'text-blue-600', bgColor: 'bg-blue-100' },
-    pendente: { label: 'Pendente', color: 'text-warning', bgColor: 'bg-yellow-100' },
-    Pendente: { label: 'Pendente', color: 'text-warning', bgColor: 'bg-yellow-100' },
+    'Em andamento': { label: 'Em andamento', color: 'text-warning', bgColor: 'bg-yellow-100' },
+    'Em Andamento': { label: 'Em andamento', color: 'text-warning', bgColor: 'bg-yellow-100' },
+    em_andamento: { label: 'Em andamento', color: 'text-warning', bgColor: 'bg-yellow-100' },
+    'Concluída': { label: 'Concluída', color: 'text-success', bgColor: 'bg-green-100' },
+    Concluida: { label: 'Concluída', color: 'text-success', bgColor: 'bg-green-100' },
+    concluida: { label: 'Concluída', color: 'text-success', bgColor: 'bg-green-100' },
+    'Cancelada': { label: 'Cancelada', color: 'text-danger', bgColor: 'bg-red-100' },
+    cancelada: { label: 'Cancelada', color: 'text-danger', bgColor: 'bg-red-100' },
   }
   const defaultStatus = { label: 'Desconhecido', color: 'text-gray-600', bgColor: 'bg-gray-100' }
 
   const resetForm = () => {
     setFormData({
       veiculo_id: '',
-      tipo: '',
-      valor: 0,
-      data_inicio: '',
-      data_conclusao: '',
-      status: 'em_andamento',
+      tipo: 'Preventiva',
+      custo: 0,
+      data_realizada: '',
+      data_proxima: '',
+      km_realizada: 0,
+      km_proxima: 0,
+      oficina: '',
+      status: 'Agendada',
       descricao: '',
     })
     setEditingManutencao(null)
@@ -123,9 +133,12 @@ const Manutencoes: React.FC = () => {
       setFormData({
         veiculo_id: manutencao.veiculo_id,
         tipo: manutencao.tipo,
-        valor: manutencao.valor,
-        data_inicio: manutencao.data_inicio,
-        data_conclusao: manutencao.data_conclusao || '',
+        custo: manutencao.custo,
+        data_realizada: manutencao.data_realizada,
+        data_proxima: manutencao.data_proxima || '',
+        km_realizada: manutencao.km_realizada,
+        km_proxima: manutencao.km_proxima,
+        oficina: manutencao.oficina,
         status: manutencao.status,
         descricao: manutencao.descricao,
       })
@@ -176,9 +189,10 @@ const Manutencoes: React.FC = () => {
             <tr>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Veículo</th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Tipo</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Valor</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Data Início</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Data Conclusão</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Custo</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">KM</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Data Realizada</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Data Próxima</th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Status</th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Ações</th>
             </tr>
@@ -186,13 +200,13 @@ const Manutencoes: React.FC = () => {
           <tbody className="divide-y divide-gray-200">
             {isLoading ? (
               <tr>
-                <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
                   Carregando...
                 </td>
               </tr>
             ) : manutencoes.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
                   Nenhuma manutenção encontrada
                 </td>
               </tr>
@@ -204,14 +218,17 @@ const Manutencoes: React.FC = () => {
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">{manutencao.veiculo_id}</td>
                     <td className="px-6 py-4 text-sm text-gray-700">{manutencao.tipo}</td>
                     <td className="px-6 py-4 text-sm font-semibold text-gray-900">
-                      R$ {(manutencao.valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      R$ {(manutencao.custo || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-700">
-                      {manutencao.data_inicio ? format(new Date(manutencao.data_inicio), 'dd/MM/yyyy', { locale: ptBR }) : '-'}
+                      {manutencao.km_realizada ? manutencao.km_realizada.toLocaleString('pt-BR') : '-'}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-700">
-                      {manutencao.data_conclusao
-                        ? format(new Date(manutencao.data_conclusao), 'dd/MM/yyyy', { locale: ptBR })
+                      {manutencao.data_realizada ? format(new Date(manutencao.data_realizada), 'dd/MM/yyyy', { locale: ptBR }) : '-'}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-700">
+                      {manutencao.data_proxima
+                        ? format(new Date(manutencao.data_proxima), 'dd/MM/yyyy', { locale: ptBR })
                         : '-'}
                     </td>
                     <td className="px-6 py-4 text-sm">
@@ -253,7 +270,7 @@ const Manutencoes: React.FC = () => {
         title={editingManutencao ? 'Editar Manutenção' : 'Nova Manutenção'}
         size="lg"
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="max-h-[70vh] overflow-y-auto space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Veículo</label>
@@ -273,63 +290,97 @@ const Manutencoes: React.FC = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
-              <input
-                type="text"
+              <select
                 value={formData.tipo}
                 onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                placeholder="Ex: Troca de Óleo"
                 required
-              />
+              >
+                <option value="Preventiva">Preventiva</option>
+                <option value="Corretiva">Corretiva</option>
+                <option value="Revisão">Revisão</option>
+              </select>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Valor</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Custo (R$)</label>
               <input
                 type="number"
                 step="0.01"
-                value={formData.valor}
-                onChange={(e) => setFormData({ ...formData, valor: parseFloat(e.target.value) })}
+                value={formData.custo}
+                onChange={(e) => setFormData({ ...formData, custo: parseFloat(e.target.value) })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Data Início</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Oficina</label>
               <input
-                type="date"
-                value={formData.data_inicio}
-                onChange={(e) => setFormData({ ...formData, data_inicio: e.target.value })}
+                type="text"
+                value={formData.oficina}
+                onChange={(e) => setFormData({ ...formData, oficina: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                required
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Data Conclusão</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">KM Realizada</label>
               <input
-                type="date"
-                value={formData.data_conclusao}
-                onChange={(e) => setFormData({ ...formData, data_conclusao: e.target.value })}
+                type="number"
+                value={formData.km_realizada}
+                onChange={(e) => setFormData({ ...formData, km_realizada: parseInt(e.target.value) })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-              <select
-                value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+              <label className="block text-sm font-medium text-gray-700 mb-1">KM Próxima</label>
+              <input
+                type="number"
+                value={formData.km_proxima}
+                onChange={(e) => setFormData({ ...formData, km_proxima: parseInt(e.target.value) })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-              >
-                <option value="em_andamento">Em Andamento</option>
-                <option value="concluida">Concluída</option>
-                <option value="cancelada">Cancelada</option>
-              </select>
+              />
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Data Realizada</label>
+              <input
+                type="date"
+                value={formData.data_realizada}
+                onChange={(e) => setFormData({ ...formData, data_realizada: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Data Próxima</label>
+              <input
+                type="date"
+                value={formData.data_proxima}
+                onChange={(e) => setFormData({ ...formData, data_proxima: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <select
+              value={formData.status}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+            >
+              <option value="Agendada">Agendada</option>
+              <option value="Em andamento">Em andamento</option>
+              <option value="Concluída">Concluída</option>
+              <option value="Cancelada">Cancelada</option>
+            </select>
           </div>
 
           <div>
