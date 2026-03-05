@@ -68,7 +68,7 @@ def seed_admin_user():
 
 def seed_default_configs():
     """Seed default system configuration values."""
-    from app.models.sistema import Configuracao
+    from app.models.auditoria import Configuracao
     db = SessionLocal()
     try:
         defaults = {
@@ -115,37 +115,33 @@ def seed_ipva_aliquotas():
 
         aliquotas = [
             # RN
-            {"estado": "RN", "tipo_veiculo": "Passeio", "ano_referencia": 2025, "aliquota": 3.0},
-            {"estado": "RN", "tipo_veiculo": "Utilitário", "ano_referencia": 2025, "aliquota": 2.5},
-            {"estado": "RN", "tipo_veiculo": "Motocicleta", "ano_referencia": 2025, "aliquota": 2.0},
-            {"estado": "RN", "tipo_veiculo": "Caminhão", "ano_referencia": 2025, "aliquota": 1.0},
-            {"estado": "RN", "tipo_veiculo": "Passeio", "ano_referencia": 2026, "aliquota": 3.0},
-            {"estado": "RN", "tipo_veiculo": "Utilitário", "ano_referencia": 2026, "aliquota": 2.5},
-            {"estado": "RN", "tipo_veiculo": "Motocicleta", "ano_referencia": 2026, "aliquota": 2.0},
-            {"estado": "RN", "tipo_veiculo": "Caminhão", "ano_referencia": 2026, "aliquota": 1.0},
+            {"estado": "RN", "tipo_veiculo": "Passeio", "aliquota": 3.0},
+            {"estado": "RN", "tipo_veiculo": "Utilitário", "aliquota": 2.5},
+            {"estado": "RN", "tipo_veiculo": "Motocicleta", "aliquota": 2.0},
+            {"estado": "RN", "tipo_veiculo": "Caminhão", "aliquota": 1.0},
             # SP
-            {"estado": "SP", "tipo_veiculo": "Passeio", "ano_referencia": 2025, "aliquota": 4.0},
-            {"estado": "SP", "tipo_veiculo": "Utilitário", "ano_referencia": 2025, "aliquota": 2.0},
-            {"estado": "SP", "tipo_veiculo": "Motocicleta", "ano_referencia": 2025, "aliquota": 2.0},
-            {"estado": "SP", "tipo_veiculo": "Caminhão", "ano_referencia": 2025, "aliquota": 1.5},
+            {"estado": "SP", "tipo_veiculo": "Passeio", "aliquota": 4.0},
+            {"estado": "SP", "tipo_veiculo": "Utilitário", "aliquota": 2.0},
+            {"estado": "SP", "tipo_veiculo": "Motocicleta", "aliquota": 2.0},
+            {"estado": "SP", "tipo_veiculo": "Caminhão", "aliquota": 1.5},
             # RJ
-            {"estado": "RJ", "tipo_veiculo": "Passeio", "ano_referencia": 2025, "aliquota": 4.0},
-            {"estado": "RJ", "tipo_veiculo": "Utilitário", "ano_referencia": 2025, "aliquota": 3.0},
+            {"estado": "RJ", "tipo_veiculo": "Passeio", "aliquota": 4.0},
+            {"estado": "RJ", "tipo_veiculo": "Utilitário", "aliquota": 3.0},
             # MG
-            {"estado": "MG", "tipo_veiculo": "Passeio", "ano_referencia": 2025, "aliquota": 4.0},
-            {"estado": "MG", "tipo_veiculo": "Utilitário", "ano_referencia": 2025, "aliquota": 3.0},
+            {"estado": "MG", "tipo_veiculo": "Passeio", "aliquota": 4.0},
+            {"estado": "MG", "tipo_veiculo": "Utilitário", "aliquota": 3.0},
             # CE
-            {"estado": "CE", "tipo_veiculo": "Passeio", "ano_referencia": 2025, "aliquota": 3.0},
-            {"estado": "CE", "tipo_veiculo": "Utilitário", "ano_referencia": 2025, "aliquota": 2.5},
+            {"estado": "CE", "tipo_veiculo": "Passeio", "aliquota": 3.0},
+            {"estado": "CE", "tipo_veiculo": "Utilitário", "aliquota": 2.5},
             # PB
-            {"estado": "PB", "tipo_veiculo": "Passeio", "ano_referencia": 2025, "aliquota": 2.5},
-            {"estado": "PB", "tipo_veiculo": "Utilitário", "ano_referencia": 2025, "aliquota": 2.0},
+            {"estado": "PB", "tipo_veiculo": "Passeio", "aliquota": 2.5},
+            {"estado": "PB", "tipo_veiculo": "Utilitário", "aliquota": 2.0},
             # PE
-            {"estado": "PE", "tipo_veiculo": "Passeio", "ano_referencia": 2025, "aliquota": 3.0},
-            {"estado": "PE", "tipo_veiculo": "Utilitário", "ano_referencia": 2025, "aliquota": 2.5},
+            {"estado": "PE", "tipo_veiculo": "Passeio", "aliquota": 3.0},
+            {"estado": "PE", "tipo_veiculo": "Utilitário", "aliquota": 2.5},
             # BA
-            {"estado": "BA", "tipo_veiculo": "Passeio", "ano_referencia": 2025, "aliquota": 3.5},
-            {"estado": "BA", "tipo_veiculo": "Utilitário", "ano_referencia": 2025, "aliquota": 2.5},
+            {"estado": "BA", "tipo_veiculo": "Passeio", "aliquota": 3.5},
+            {"estado": "BA", "tipo_veiculo": "Utilitário", "aliquota": 2.5},
         ]
 
         for data in aliquotas:
