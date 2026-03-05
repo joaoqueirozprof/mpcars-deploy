@@ -12,6 +12,23 @@ from app.schemas.common import PaginatedResponse, MessageResponse
 router = APIRouter()
 
 
+@router.get("/", summary="Listar transações financeiras")
+async def list_financeiro(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+    tipo: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+) -> PaginatedResponse:
+    """List financial transactions."""
+    return PaginatedResponse(
+        items=[],
+        total=0,
+        page=1,
+        per_page=limit
+    )
+
+
 @router.get("/resumo", summary="Resumo financeiro mensal")
 async def get_financial_summary(
     ano: Optional[int] = Query(None),
