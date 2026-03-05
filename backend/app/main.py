@@ -43,10 +43,12 @@ async def lifespan(app: FastAPI):
     """Startup and shutdown events."""
     logger.info("Starting MPCARS API application...")
 
-    # Create tables
+    # Drop and recreate all tables (fresh deploy, no real data yet)
     try:
+        Base.metadata.drop_all(bind=engine)
+        logger.info("All tables dropped for fresh schema creation")
         Base.metadata.create_all(bind=engine)
-        logger.info("Database tables created/verified successfully")
+        logger.info("Database tables created successfully with correct schema")
     except Exception as e:
         logger.error(f"Error creating database tables: {e}")
 
