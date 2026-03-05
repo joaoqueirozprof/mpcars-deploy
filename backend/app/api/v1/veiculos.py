@@ -96,11 +96,22 @@ async def create_veiculo(
     if existing_placa:
         raise HTTPException(status_code=400, detail="Placa já cadastrada")
 
-    novo_veiculo = Veiculo(**veiculo_data.model_dump())
-    db.add(novo_veiculo)
-    db.commit()
-    db.refresh(novo_veiculo)
-    return veiculo_to_dict(novo_veiculo)
+    data = veiculo_data.model_dump()
+    # Convert empty strings to None for unique fields
+    if data.get("chassi") is not None and str(data["chassi"]).strip() == "":
+        data["chassi"] = None
+    if data.get("renavam") is not None and str(data["renavam"]).strip() == "":
+        data["renavam"] = None
+
+    try:
+        novo_veiculo = Veiculo(**data)
+        db.add(novo_veiculo)
+        db.commit()
+        db.refresh(novo_veiculo)
+        return veiculo_to_dict(novo_veiculo)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Erro ao criar veículo: {str(e)}")
 
 
 @router.put("/{veiculo_id}", summary="Atualizar veículo")

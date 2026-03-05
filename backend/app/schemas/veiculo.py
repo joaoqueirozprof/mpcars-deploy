@@ -1,6 +1,6 @@
 from typing import Optional
 from datetime import datetime, date
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 
 
 class VeiculoCreate(BaseModel):
@@ -11,7 +11,7 @@ class VeiculoCreate(BaseModel):
     ano: int
     cor: str
     combustivel: str
-    empresa_id: int
+    empresa_id: Optional[int] = None
     km_atual: Optional[float] = 0
     preco_compra: Optional[float] = 0
     data_compra: Optional[date] = None
@@ -33,6 +33,35 @@ class VeiculoCreate(BaseModel):
     tapetes: Optional[bool] = False
     cd_player: Optional[bool] = False
     observacoes: Optional[str] = None
+
+    @field_validator("empresa_id", mode="before")
+    @classmethod
+    def parse_empresa_id(cls, v):
+        if v is None or v == "" or v == "null":
+            return None
+        return int(v)
+
+    @field_validator("chassi", "renavam", mode="before")
+    @classmethod
+    def empty_string_to_none(cls, v):
+        if v is None or (isinstance(v, str) and v.strip() == ""):
+            return None
+        return v
+
+    @field_validator("km_atual", "preco_compra", "valor_venal", "km_referencia",
+                     "valor_km_extra", "km_inicio_empresa", mode="before")
+    @classmethod
+    def parse_float_fields(cls, v):
+        if v is None or v == "" or v == "null":
+            return 0
+        return float(v)
+
+    @field_validator("ano", mode="before")
+    @classmethod
+    def parse_ano(cls, v):
+        if v is None or v == "" or v == "null":
+            return 2024
+        return int(v)
 
 
 class VeiculoUpdate(BaseModel):
@@ -66,6 +95,20 @@ class VeiculoUpdate(BaseModel):
     cd_player: Optional[bool] = None
     observacoes: Optional[str] = None
 
+    @field_validator("empresa_id", mode="before")
+    @classmethod
+    def parse_empresa_id(cls, v):
+        if v is None or v == "" or v == "null":
+            return None
+        return int(v)
+
+    @field_validator("chassi", "renavam", mode="before")
+    @classmethod
+    def empty_string_to_none(cls, v):
+        if v is None or (isinstance(v, str) and v.strip() == ""):
+            return None
+        return v
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -85,7 +128,7 @@ class VeiculoResponse(BaseModel):
     ano: int
     cor: str
     combustivel: str
-    empresa_id: int
+    empresa_id: Optional[int] = None
     km_atual: float
     preco_compra: float
     data_compra: Optional[date]

@@ -44,7 +44,7 @@ class Veiculo(Base):
     cd_player: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     # Foreign Key
-    empresa_id: Mapped[int] = mapped_column(ForeignKey("empresas.id"), nullable=False)
+    empresa_id: Mapped[int | None] = mapped_column(ForeignKey("empresas.id"), nullable=True)
 
     # Additional
     observacoes: Mapped[str | None] = mapped_column(Text)

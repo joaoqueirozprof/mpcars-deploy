@@ -13,6 +13,33 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+def run_migrations():
+    """Run lightweight schema migrations."""
+    from sqlalchemy import text
+    db = SessionLocal()
+    try:
+        migrations = [
+            "ALTER TABLE veiculos ALTER COLUMN empresa_id DROP NOT NULL",
+            "ALTER TABLE veiculos DROP CONSTRAINT IF EXISTS veiculos_chassi_key",
+            "ALTER TABLE veiculos DROP CONSTRAINT IF EXISTS veiculos_renavam_key",
+            "CREATE UNIQUE INDEX IF NOT EXISTS ix_veiculos_chassi_unique ON veiculos (chassi) WHERE chassi IS NOT NULL",
+            "CREATE UNIQUE INDEX IF NOT EXISTS ix_veiculos_renavam_unique ON veiculos (renavam) WHERE renavam IS NOT NULL",
+        ]
+        for sql in migrations:
+            try:
+                db.execute(text(sql))
+                db.commit()
+            except Exception as e:
+                db.rollback()
+                logger.debug(f"Migration skipped: {sql} -> {e}")
+        logger.info("Migrations completed successfully")
+    except Exception as e:
+        logger.error(f"Error in migrations: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+
 def seed_admin_user():
     """Create default admin user if no users exist."""
     from app.models.usuario import Usuario
@@ -50,6 +77,12 @@ async def lifespan(app: FastAPI):
         logger.info("Database tables created/verified successfully")
     except Exception as e:
         logger.error(f"Error creating database tables: {e}")
+
+    # Run lightweight migrations
+    try:
+        run_migrations()
+    except Exception as e:
+        logger.error(f"Error running migrations: {e}")
 
     # Seed admin user
     try:
