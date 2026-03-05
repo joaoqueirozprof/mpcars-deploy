@@ -65,6 +65,24 @@ class UsoVeiculoEmpresa(Base):
     def __repr__(self) -> str:
         return f"<UsoVeiculoEmpresa(id={self.id}, veiculo_id={self.veiculo_id}, empresa_id={self.empresa_id})>"
 
+    def _to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "veiculo_id": self.veiculo_id,
+            "empresa_id": self.empresa_id,
+            "contrato_id": self.contrato_id,
+            "km_inicial": self.km_inicial,
+            "km_final": self.km_final,
+            "data_inicio": self.data_inicio.isoformat() if self.data_inicio else None,
+            "data_fim": self.data_fim.isoformat() if self.data_fim else None,
+            "km_referencia": self.km_referencia,
+            "valor_km_extra": self.valor_km_extra,
+            "valor_locacao": self.valor_locacao,
+            "status": self.status,
+            "observacoes": self.observacoes,
+            "data_cadastro": self.data_cadastro.isoformat() if self.data_cadastro else None
+        }
+
 
 class RelatorioNF(Base):
     """NF (Nota Fiscal) reports for vehicle usage."""
