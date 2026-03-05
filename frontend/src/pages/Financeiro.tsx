@@ -1,39 +1,146 @@
 import React, { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { financeiroAPI } from '../services/api'
 import { Plus, Filter, Download, CheckCircle, Clock, AlertCircle } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import Modal from '../components/Modal'
 
 interface Financeiro {
   id: string
-  contrato: string
-  cliente: string
   descricao: string
   valor: number
-  dataPagamento?: string
-  dataVencimento: string
+  data_vencimento: string
+  data_pagamento?: string
+  status: 'pago' | 'pendente' | 'vencido'
+  tipo: 'receita' | 'despesa'
+}
+
+interface FormData {
+  descricao: string
+  valor: string
+  data_vencimento: string
+  data_pagamento?: string
   status: 'pago' | 'pendente' | 'vencido'
   tipo: 'receita' | 'despesa'
 }
 
 type StatusFilter = 'todos' | 'pago' | 'pendente' | 'vencido'
+type TipoFilter = 'todos' | 'receita' | 'despesa'
 
 const Financeiro: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('todos')
-  const [tipoFilter, setTipoFilter] = useState<'todos' | 'receita' | 'despesa'>('todos')
+  const [tipoFilter, setTipoFilter] = useState<TipoFilter>('todos')
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [formData, setFormData] = useState<FormData>({
+    descricao: '',
+    valor: '',
+    data_vencimento: '',
+    status: 'pendente',
+    tipo: 'receita',
+  })
 
-  const { data: financeiroData, isLoading } = useQuery({
+  const queryClient = useQueryClient()
+
+  const { data: financeiroResponse, isLoading } = useQuery({
     queryKey: ['financeiro', statusFilter, tipoFilter],
-    queryFn: () =>
-      financeiroAPI.list({
+    queryFn: async () => {
+      const response = await financeiroAPI.list({
         status: statusFilter === 'todos' ? undefined : statusFilter,
         tipo: tipoFilter === 'todos' ? undefined : tipoFilter,
-      }),
+      })
+      return response.data
+    },
     staleTime: 5 * 60 * 1000,
   })
 
-  const lancamentos: Financeiro[] = financeiroData?.data || []
+  const createMutation = useMutation({
+    mutationFn: (data: FormData) =>
+      financeiroAPI.create({
+        ...data,
+        valor: parseFloat(data.valor),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['financeiro'] })
+      setIsModalOpen(false)
+      resetForm()
+    },
+  })
+
+  const updateMutation = useMutation({
+    mutationFn: (data: FormData) =>
+      financeiroAPI.update(editingId || '', {
+        ...data,
+        valor: parseFloat(data.valor),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['financeiro'] })
+      setIsModalOpen(false)
+      resetForm()
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => financeiroAPI.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['financeiro'] })
+    },
+  })
+
+  const lancamentos: Financeiro[] = financeiroResponse || []
+
+  const resetForm = () => {
+    setFormData({
+      descricao: '',
+      valor: '',
+      data_vencimento: '',
+      status: 'pendente',
+      tipo: 'receita',
+    })
+    setEditingId(null)
+  }
+
+  const openCreateModal = () => {
+    resetForm()
+    setIsModalOpen(true)
+  }
+
+  const openEditModal = (item: any) => {
+    setFormData({
+      descricao: item.descricao || '',
+      valor: item.valor?.toString() || '',
+      data_vencimento: item.data_vencimento || '',
+      data_pagamento: item.data_pagamento || '',
+      status: item.status || 'pendente',
+      tipo: item.tipo || 'receita',
+    })
+    setEditingId(item.id)
+    setIsModalOpen(true)
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (editingId) {
+      updateMutation.mutate(formData)
+    } else {
+      createMutation.mutate(formData)
+    }
+  }
+
+  const handleDelete = (id: string) => {
+    if (confirm('Tem certeza que deseja deletar este lançamento?')) {
+      deleteMutation.mutate(id)
+    }
+  }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }))
+  }
 
   const statusConfig: Record<string, { label: string; color: string; bgColor: string; icon: React.ReactNode }> = {
     pago: {
@@ -58,11 +165,11 @@ const Financeiro: React.FC = () => {
 
   const totals = {
     receita: lancamentos
-      .filter((l) => l.tipo === 'receita')
-      .reduce((acc, l) => acc + l.valor, 0),
+      .filter((l: any) => l.tipo === 'receita')
+      .reduce((acc, l: any) => acc + l.valor, 0),
     despesa: lancamentos
-      .filter((l) => l.tipo === 'despesa')
-      .reduce((acc, l) => acc + l.valor, 0),
+      .filter((l: any) => l.tipo === 'despesa')
+      .reduce((acc, l: any) => acc + l.valor, 0),
   }
 
   const saldo = totals.receita - totals.despesa
@@ -75,7 +182,10 @@ const Financeiro: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900">Financeiro</h1>
           <p className="text-gray-600 mt-1">Controle de receitas e despesas</p>
         </div>
-        <button className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg font-medium flex items-center gap-2 transition-colors">
+        <button
+          onClick={openCreateModal}
+          className="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg font-medium flex items-center gap-2 transition-colors"
+        >
           <Plus size={20} />
           Novo Lançamento
         </button>
@@ -106,7 +216,7 @@ const Financeiro: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-4 flex-wrap">
+      <div className="flex gap-4 flex-wrap items-center">
         <div className="flex items-center gap-2">
           <Filter size={20} className="text-gray-600" />
           <span className="text-sm font-medium text-gray-700">Status:</span>
@@ -144,16 +254,15 @@ const Financeiro: React.FC = () => {
       </div>
 
       {/* Transactions Table */}
-      <div className="bg-white rounded-lg shadow overflow-x-auto">
+      <div className="bg-white rounded-lg shadow overflow-hidden overflow-x-auto">
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Contrato</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Cliente</th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Descrição</th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Tipo</th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Valor</th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Vencimento</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Pagamento</th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Status</th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Ações</th>
             </tr>
@@ -161,24 +270,22 @@ const Financeiro: React.FC = () => {
           <tbody className="divide-y divide-gray-200">
             {isLoading ? (
               <tr>
-                <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                   Carregando...
                 </td>
               </tr>
             ) : lancamentos.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                   Nenhum lançamento encontrado
                 </td>
               </tr>
             ) : (
-              lancamentos.map((lancamento) => {
+              lancamentos.map((lancamento: any) => {
                 const status = statusConfig[lancamento.status]
                 return (
                   <tr key={lancamento.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 text-sm font-bold text-primary">{lancamento.contrato}</td>
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{lancamento.cliente}</td>
-                    <td className="px-6 py-4 text-sm text-gray-700">{lancamento.descricao}</td>
+                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{lancamento.descricao}</td>
                     <td className="px-6 py-4 text-sm">
                       <span
                         className={`px-3 py-1 rounded-full text-xs font-semibold ${
@@ -197,9 +304,16 @@ const Financeiro: React.FC = () => {
                       })}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-700">
-                      {format(new Date(lancamento.dataVencimento), 'dd/MM/yyyy', {
+                      {format(new Date(lancamento.data_vencimento), 'dd/MM/yyyy', {
                         locale: ptBR,
                       })}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-700">
+                      {lancamento.data_pagamento
+                        ? format(new Date(lancamento.data_pagamento), 'dd/MM/yyyy', {
+                            locale: ptBR,
+                          })
+                        : '-'}
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${status.bgColor} ${status.color}`}>
@@ -208,9 +322,22 @@ const Financeiro: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm">
-                      <button className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                        <Download size={18} />
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => openEditModal(lancamento)}
+                          className="p-2 text-primary hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Editar"
+                        >
+                          <Download size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(lancamento.id)}
+                          className="p-2 text-danger hover:bg-red-50 rounded-lg transition-colors"
+                          title="Deletar"
+                        >
+                          <AlertCircle size={18} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 )
@@ -219,6 +346,107 @@ const Financeiro: React.FC = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Modal */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={editingId ? 'Editar Lançamento' : 'Novo Lançamento'}
+      >
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
+            <input
+              type="text"
+              name="descricao"
+              value={formData.descricao}
+              onChange={handleInputChange}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+            <select
+              name="tipo"
+              value={formData.tipo}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="receita">Receita</option>
+              <option value="despesa">Despesa</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Valor</label>
+            <input
+              type="number"
+              name="valor"
+              value={formData.valor}
+              onChange={handleInputChange}
+              required
+              step="0.01"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Data de Vencimento</label>
+            <input
+              type="date"
+              name="data_vencimento"
+              value={formData.data_vencimento}
+              onChange={handleInputChange}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Data de Pagamento</label>
+            <input
+              type="date"
+              name="data_pagamento"
+              value={formData.data_pagamento || ''}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <select
+              name="status"
+              value={formData.status}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="pendente">Pendente</option>
+              <option value="pago">Pago</option>
+              <option value="vencido">Vencido</option>
+            </select>
+          </div>
+
+          <div className="flex gap-2 pt-4 border-t">
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(false)}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={createMutation.isPending || updateMutation.isPending}
+              className="flex-1 px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+            >
+              {createMutation.isPending || updateMutation.isPending ? 'Salvando...' : 'Salvar'}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   )
 }

@@ -94,10 +94,10 @@ export const empresasAPI = {
 
 // Dashboard API calls
 export const dashboardAPI = {
-  stats: () => api.get('/dashboard/stats'),
+  stats: () => api.get('/dashboard/stats/'),
   charts: (period?: string) =>
-    api.get('/dashboard/charts', { params: { period } }),
-  alerts: () => api.get('/dashboard/alerts'),
+    api.get('/dashboard/charts/', { params: { period } }),
+  alerts: () => api.get('/dashboard/alerts/'),
 }
 
 // Financeiro API calls

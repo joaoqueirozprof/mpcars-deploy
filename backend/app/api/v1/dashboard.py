@@ -194,3 +194,12 @@ async def get_dashboard_data(
         "alertas": alertas,
         "timestamp": datetime.utcnow().isoformat()
     }
+
+
+@router.get("/stats", summary="Estatísticas do Dashboard")
+async def get_dashboard_stats(
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+) -> Dict[str, Any]:
+    """Alias for dashboard data."""
+    return await get_dashboard_data(db=db, current_user=current_user)
