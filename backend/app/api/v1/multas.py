@@ -15,11 +15,12 @@ class MultaCreate(BaseModel):
     veiculo_id: int
     contrato_id: Optional[int] = None
     cliente_id: Optional[int] = None
-    data_infracao: Optional[date] = None
+    # Alternative fields MUST come before canonical fields for validator ordering
     data_multa: Optional[date] = None
+    data_infracao: Optional[date] = None
     data_notificacao: Optional[date] = None
-    auto_infracao: Optional[str] = None
     numero_infracao: Optional[str] = None
+    auto_infracao: Optional[str] = None
     descricao: str
     valor: float
     pontos: int = 0

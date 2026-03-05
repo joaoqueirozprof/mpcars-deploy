@@ -15,14 +15,15 @@ class ManutencaoCreate(BaseModel):
     veiculo_id: int
     tipo: str = "Preventiva"
     descricao: str
+    # Alternative fields MUST come before canonical fields for validator ordering
+    km_manutencao: Optional[float] = None
     km_realizada: Optional[float] = None
     km_proxima: Optional[float] = None
-    km_manutencao: Optional[float] = None
-    data_realizada: Optional[date] = None
     data_manutencao: Optional[date] = None
+    data_realizada: Optional[date] = None
     data_proxima: Optional[date] = None
-    custo: Optional[float] = 0
     valor: Optional[float] = None
+    custo: Optional[float] = 0
     oficina: Optional[str] = None
     status: str = "Agendada"
     observacoes: Optional[str] = None

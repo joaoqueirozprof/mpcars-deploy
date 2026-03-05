@@ -18,10 +18,11 @@ class SeguroCreate(BaseModel):
     tipo_seguro: str = "Completo"
     tipo_cobertura: Optional[str] = None
     data_inicio: date
-    data_vencimento: Optional[date] = None
+    # Alternative fields MUST come before canonical fields for validator ordering
     data_fim: Optional[date] = None
-    valor: Optional[float] = None
+    data_vencimento: Optional[date] = None
     valor_premio: Optional[float] = None
+    valor: Optional[float] = None
     valor_franquia: float = 0
     cobertura: Optional[str] = None
     quantidade_parcelas: int = 1
@@ -54,10 +55,10 @@ class SeguroUpdate(BaseModel):
     numero_apolice: Optional[str] = None
     tipo_seguro: Optional[str] = None
     data_inicio: Optional[date] = None
-    data_vencimento: Optional[date] = None
     data_fim: Optional[date] = None
-    valor: Optional[float] = None
+    data_vencimento: Optional[date] = None
     valor_premio: Optional[float] = None
+    valor: Optional[float] = None
     valor_franquia: Optional[float] = None
     cobertura: Optional[str] = None
     quantidade_parcelas: Optional[int] = None
