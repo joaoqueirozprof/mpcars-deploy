@@ -90,9 +90,13 @@ const Seguros: React.FC = () => {
 
   const statusConfig: Record<string, { label: string; color: string; bgColor: string }> = {
     ativo: { label: 'Ativo', color: 'text-success', bgColor: 'bg-green-100' },
+    Ativo: { label: 'Ativo', color: 'text-success', bgColor: 'bg-green-100' },
     vencido: { label: 'Vencido', color: 'text-danger', bgColor: 'bg-red-100' },
+    Vencido: { label: 'Vencido', color: 'text-danger', bgColor: 'bg-red-100' },
     cancelado: { label: 'Cancelado', color: 'text-gray-600', bgColor: 'bg-gray-100' },
+    Cancelado: { label: 'Cancelado', color: 'text-gray-600', bgColor: 'bg-gray-100' },
   }
+  const defaultStatus = { label: 'Desconhecido', color: 'text-gray-600', bgColor: 'bg-gray-100' }
 
   const resetForm = () => {
     setFormData({
@@ -189,20 +193,20 @@ const Seguros: React.FC = () => {
               </tr>
             ) : (
               seguros.map((seguro) => {
-                const status = statusConfig[seguro.status]
+                const status = statusConfig[seguro.status] || defaultStatus
                 return (
                   <tr key={seguro.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">{seguro.veiculo_id}</td>
                     <td className="px-6 py-4 text-sm text-gray-700 font-mono">{seguro.numero_apolice}</td>
                     <td className="px-6 py-4 text-sm text-gray-700">{seguro.tipo}</td>
                     <td className="px-6 py-4 text-sm font-semibold text-gray-900">
-                      R$ {seguro.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      R$ {(seguro.valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-700">
-                      {format(new Date(seguro.data_inicio), 'dd/MM/yyyy', { locale: ptBR })}
+                      {seguro.data_inicio ? format(new Date(seguro.data_inicio), 'dd/MM/yyyy', { locale: ptBR }) : '-'}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-700">
-                      {format(new Date(seguro.data_vencimento), 'dd/MM/yyyy', { locale: ptBR })}
+                      {seguro.data_vencimento ? format(new Date(seguro.data_vencimento), 'dd/MM/yyyy', { locale: ptBR }) : '-'}
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold ${status.bgColor} ${status.color}`}>

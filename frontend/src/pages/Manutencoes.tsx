@@ -90,9 +90,19 @@ const Manutencoes: React.FC = () => {
 
   const statusConfig: Record<string, { label: string; color: string; bgColor: string }> = {
     em_andamento: { label: 'Em Andamento', color: 'text-warning', bgColor: 'bg-yellow-100' },
+    Em_Andamento: { label: 'Em Andamento', color: 'text-warning', bgColor: 'bg-yellow-100' },
+    'Em Andamento': { label: 'Em Andamento', color: 'text-warning', bgColor: 'bg-yellow-100' },
     concluida: { label: 'Concluída', color: 'text-success', bgColor: 'bg-green-100' },
+    Concluida: { label: 'Concluída', color: 'text-success', bgColor: 'bg-green-100' },
+    'Concluída': { label: 'Concluída', color: 'text-success', bgColor: 'bg-green-100' },
     cancelada: { label: 'Cancelada', color: 'text-danger', bgColor: 'bg-red-100' },
+    Cancelada: { label: 'Cancelada', color: 'text-danger', bgColor: 'bg-red-100' },
+    agendada: { label: 'Agendada', color: 'text-blue-600', bgColor: 'bg-blue-100' },
+    Agendada: { label: 'Agendada', color: 'text-blue-600', bgColor: 'bg-blue-100' },
+    pendente: { label: 'Pendente', color: 'text-warning', bgColor: 'bg-yellow-100' },
+    Pendente: { label: 'Pendente', color: 'text-warning', bgColor: 'bg-yellow-100' },
   }
+  const defaultStatus = { label: 'Desconhecido', color: 'text-gray-600', bgColor: 'bg-gray-100' }
 
   const resetForm = () => {
     setFormData({
@@ -188,16 +198,16 @@ const Manutencoes: React.FC = () => {
               </tr>
             ) : (
               manutencoes.map((manutencao) => {
-                const status = statusConfig[manutencao.status]
+                const status = statusConfig[manutencao.status] || defaultStatus
                 return (
                   <tr key={manutencao.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">{manutencao.veiculo_id}</td>
                     <td className="px-6 py-4 text-sm text-gray-700">{manutencao.tipo}</td>
                     <td className="px-6 py-4 text-sm font-semibold text-gray-900">
-                      R$ {manutencao.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      R$ {(manutencao.valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-700">
-                      {format(new Date(manutencao.data_inicio), 'dd/MM/yyyy', { locale: ptBR })}
+                      {manutencao.data_inicio ? format(new Date(manutencao.data_inicio), 'dd/MM/yyyy', { locale: ptBR }) : '-'}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-700">
                       {manutencao.data_conclusao

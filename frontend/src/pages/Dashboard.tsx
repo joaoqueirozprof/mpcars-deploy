@@ -74,8 +74,53 @@ const Dashboard: React.FC = () => {
   } = useQuery({
     queryKey: ['dashboard-stats'],
     queryFn: async () => {
-      const response = await dashboardAPI.stats()
-      return response.data as DashboardStats
+      try {
+        const response = await dashboardAPI.stats()
+        const data = response.data
+        // Normalize alertas_ativos keys (backend uses critical/high/warning, frontend uses critico/atencao/info)
+        if (data?.alertas_ativos) {
+          const a = data.alertas_ativos
+          data.alertas_ativos = {
+            critico: a.critico ?? a.critical ?? a.high ?? 0,
+            atencao: a.atencao ?? a.warning ?? 0,
+            info: a.info ?? 0,
+          }
+        }
+        // Normalize taxa_ocupacao (backend may return 0-100, frontend expects 0-1)
+        if (data?.taxa_ocupacao !== undefined && data.taxa_ocupacao > 1) {
+          data.taxa_ocupacao = data.taxa_ocupacao / 100
+        }
+        // Normalize contratos_atrasados (backend returns cliente_id/veiculo_id, frontend expects cliente/veiculo)
+        if (data?.contratos_atrasados) {
+          data.contratos_atrasados = data.contratos_atrasados.map((c: any) => ({
+            ...c,
+            cliente: c.cliente || c.cliente_id || 'N/A',
+            veiculo: c.veiculo || c.veiculo_id || 'N/A',
+          }))
+        }
+        return data as DashboardStats
+      } catch (err) {
+        console.error('Dashboard stats error:', err)
+        // Return safe defaults instead of throwing
+        return {
+          total_veiculos: 0,
+          veiculos_alugados: 0,
+          veiculos_disponiveis: 0,
+          veiculos_manutencao: 0,
+          contratos_ativos: 0,
+          total_clientes: 0,
+          receita_mes: 0,
+          despesas_mes: 0,
+          lucro_mes: 0,
+          taxa_ocupacao: 0,
+          top_clientes: [],
+          top_veiculos: [],
+          historico_mensal: [],
+          alertas_ativos: { critico: 0, atencao: 0, info: 0 },
+          contratos_atrasados: [],
+          previsao_receita: 0,
+        } as DashboardStats
+      }
     },
     staleTime: 5 * 60 * 1000,
   })
@@ -445,9 +490,9 @@ const Dashboard: React.FC = () => {
                         Veículo: {contrato.veiculo}
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
-                        Previsto: {format(new Date(contrato.data_prevista), 'dd/MM/yyyy', {
+                        Previsto: {contrato.data_prevista ? format(new Date(contrato.data_prevista), 'dd/MM/yyyy', {
                           locale: ptBR,
-                        })}
+                        }) : '-'}
                       </p>
                     </div>
                     <span className="bg-red-600 text-white px-3 py-1 rounded-full font-bold text-sm">
