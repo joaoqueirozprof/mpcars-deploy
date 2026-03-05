@@ -66,6 +66,101 @@ def seed_admin_user():
         db.close()
 
 
+def seed_default_configs():
+    """Seed default system configuration values."""
+    from app.models.sistema import Configuracao
+    db = SessionLocal()
+    try:
+        defaults = {
+            "empresa_nome": "MPCARS",
+            "empresa_subtitulo": "Aluguel de Veículos",
+            "empresa_cnpj": "32.471.526/0001-53",
+            "empresa_telefone": "(84) 99999-0000",
+            "empresa_endereco": "Rua Principal, 100 - Centro",
+            "empresa_cidade": "Pau dos Ferros - RN",
+            "empresa_cep": "59900-000",
+            "valor_diaria_padrao": "150.00",
+            "valor_hora_extra_padrao": "15.00",
+            "valor_km_excedente_padrao": "1.00",
+            "km_livres_dia_padrao": "200",
+        }
+        created = 0
+        for chave, valor in defaults.items():
+            exists = db.query(Configuracao).filter(Configuracao.chave == chave).first()
+            if not exists:
+                config = Configuracao(chave=chave, valor=valor)
+                db.add(config)
+                created += 1
+        if created > 0:
+            db.commit()
+            logger.info(f"Seeded {created} default configurations")
+        else:
+            logger.info("Default configurations already exist, skipping seed.")
+    except Exception as e:
+        logger.error(f"Error seeding configs: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+
+def seed_ipva_aliquotas():
+    """Seed IPVA aliquotas for common Brazilian states."""
+    from app.models.ipva import IpvaAliquota
+    db = SessionLocal()
+    try:
+        count = db.query(IpvaAliquota).count()
+        if count > 0:
+            logger.info(f"IPVA aliquotas already seeded ({count} records), skipping.")
+            return
+
+        aliquotas = [
+            # RN
+            {"estado": "RN", "tipo_veiculo": "Passeio", "ano_referencia": 2025, "aliquota": 3.0},
+            {"estado": "RN", "tipo_veiculo": "Utilitário", "ano_referencia": 2025, "aliquota": 2.5},
+            {"estado": "RN", "tipo_veiculo": "Motocicleta", "ano_referencia": 2025, "aliquota": 2.0},
+            {"estado": "RN", "tipo_veiculo": "Caminhão", "ano_referencia": 2025, "aliquota": 1.0},
+            {"estado": "RN", "tipo_veiculo": "Passeio", "ano_referencia": 2026, "aliquota": 3.0},
+            {"estado": "RN", "tipo_veiculo": "Utilitário", "ano_referencia": 2026, "aliquota": 2.5},
+            {"estado": "RN", "tipo_veiculo": "Motocicleta", "ano_referencia": 2026, "aliquota": 2.0},
+            {"estado": "RN", "tipo_veiculo": "Caminhão", "ano_referencia": 2026, "aliquota": 1.0},
+            # SP
+            {"estado": "SP", "tipo_veiculo": "Passeio", "ano_referencia": 2025, "aliquota": 4.0},
+            {"estado": "SP", "tipo_veiculo": "Utilitário", "ano_referencia": 2025, "aliquota": 2.0},
+            {"estado": "SP", "tipo_veiculo": "Motocicleta", "ano_referencia": 2025, "aliquota": 2.0},
+            {"estado": "SP", "tipo_veiculo": "Caminhão", "ano_referencia": 2025, "aliquota": 1.5},
+            # RJ
+            {"estado": "RJ", "tipo_veiculo": "Passeio", "ano_referencia": 2025, "aliquota": 4.0},
+            {"estado": "RJ", "tipo_veiculo": "Utilitário", "ano_referencia": 2025, "aliquota": 3.0},
+            # MG
+            {"estado": "MG", "tipo_veiculo": "Passeio", "ano_referencia": 2025, "aliquota": 4.0},
+            {"estado": "MG", "tipo_veiculo": "Utilitário", "ano_referencia": 2025, "aliquota": 3.0},
+            # CE
+            {"estado": "CE", "tipo_veiculo": "Passeio", "ano_referencia": 2025, "aliquota": 3.0},
+            {"estado": "CE", "tipo_veiculo": "Utilitário", "ano_referencia": 2025, "aliquota": 2.5},
+            # PB
+            {"estado": "PB", "tipo_veiculo": "Passeio", "ano_referencia": 2025, "aliquota": 2.5},
+            {"estado": "PB", "tipo_veiculo": "Utilitário", "ano_referencia": 2025, "aliquota": 2.0},
+            # PE
+            {"estado": "PE", "tipo_veiculo": "Passeio", "ano_referencia": 2025, "aliquota": 3.0},
+            {"estado": "PE", "tipo_veiculo": "Utilitário", "ano_referencia": 2025, "aliquota": 2.5},
+            # BA
+            {"estado": "BA", "tipo_veiculo": "Passeio", "ano_referencia": 2025, "aliquota": 3.5},
+            {"estado": "BA", "tipo_veiculo": "Utilitário", "ano_referencia": 2025, "aliquota": 2.5},
+        ]
+
+        for data in aliquotas:
+            aliq = IpvaAliquota(**data)
+            db.add(aliq)
+
+        db.commit()
+        logger.info(f"Seeded {len(aliquotas)} IPVA aliquotas")
+    except Exception as e:
+        logger.error(f"Error seeding IPVA aliquotas: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown events."""
@@ -89,6 +184,18 @@ async def lifespan(app: FastAPI):
         seed_admin_user()
     except Exception as e:
         logger.error(f"Error seeding admin: {e}")
+
+    # Seed default configurations
+    try:
+        seed_default_configs()
+    except Exception as e:
+        logger.error(f"Error seeding configs: {e}")
+
+    # Seed IPVA aliquotas
+    try:
+        seed_ipva_aliquotas()
+    except Exception as e:
+        logger.error(f"Error seeding IPVA aliquotas: {e}")
 
     logger.info("MPCARS API is ready to accept requests")
     yield

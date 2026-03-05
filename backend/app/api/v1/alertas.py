@@ -95,56 +95,6 @@ async def list_alertas(
     }
 
 
-@router.get("/{alerta_id}", summary="Obter alerta por ID")
-async def get_alerta(
-    alerta_id: int,
-    db: Session = Depends(get_db),
-    current_user: TokenData = Depends(get_current_user)
-):
-    alerta = db.query(AlertaHistorico).filter(AlertaHistorico.id == alerta_id).first()
-    if not alerta:
-        raise HTTPException(status_code=404, detail="Alerta não encontrado")
-    return alerta_to_dict(alerta)
-
-
-@router.post("/", summary="Criar novo alerta")
-async def create_alerta(
-    alerta_data: AlertaCreate,
-    db: Session = Depends(get_db),
-    current_user: TokenData = Depends(get_current_user)
-):
-    try:
-        novo_alerta = AlertaHistorico(**alerta_data.model_dump())
-        db.add(novo_alerta)
-        db.commit()
-        db.refresh(novo_alerta)
-        return alerta_to_dict(novo_alerta)
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"Erro ao criar alerta: {str(e)}")
-
-
-@router.put("/{alerta_id}/resolver", summary="Marcar alerta como resolvido")
-async def resolver_alerta(
-    alerta_id: int,
-    resolver_data: AlertaResolverRequest,
-    db: Session = Depends(get_db),
-    current_user: TokenData = Depends(get_current_user)
-):
-    alerta = db.query(AlertaHistorico).filter(AlertaHistorico.id == alerta_id).first()
-    if not alerta:
-        raise HTTPException(status_code=404, detail="Alerta não encontrado")
-
-    alerta.resolvido = True
-    alerta.data_resolucao = datetime.now()
-    alerta.resolvido_por = resolver_data.resolvido_por or current_user.username
-    alerta.acao_tomada = resolver_data.acao_tomada
-
-    db.commit()
-    db.refresh(alerta)
-    return alerta_to_dict(alerta)
-
-
 @router.get("/gerar/alertas", summary="Gerar alertas automáticos")
 async def gerar_alertas(
     db: Session = Depends(get_db),
@@ -162,11 +112,11 @@ async def gerar_alertas(
     alertas_criados = []
 
     try:
-        # 1. Check CNH expiring or expired (próximos 30 dias)
+        # 1. Check CNH expiring or expired
         clientes_cnh = db.query(Cliente).filter(
             Cliente.cnh_validade.isnot(None),
             Cliente.cnh_validade <= hoje + timedelta(days=30),
-            Cliente.cnh_validade >= hoje - timedelta(days=30)  # Ainda dentro da janela
+            Cliente.cnh_validade >= hoje - timedelta(days=30)
         ).all()
 
         for cliente in clientes_cnh:
@@ -224,7 +174,7 @@ async def gerar_alertas(
                 db.add(alerta)
                 alertas_criados.append("CONTRATO_ATRASADO")
 
-        # 3. Check seguros expirando ou expirados (próximos 30 dias)
+        # 3. Check seguros expirando
         seguros_vencimento = db.query(Seguro).filter(
             Seguro.data_vencimento <= hoje + timedelta(days=30),
             Seguro.data_vencimento >= hoje - timedelta(days=30)
@@ -255,7 +205,7 @@ async def gerar_alertas(
                 db.add(alerta)
                 alertas_criados.append("SEGURO_EXPIRANDO")
 
-        # 4. Check IPVA expirando ou expirado (próximos 30 dias, status Pendente)
+        # 4. Check IPVA expirando
         ipva_vencimento = db.query(IpvaRegistro).filter(
             IpvaRegistro.status == "Pendente",
             IpvaRegistro.data_vencimento <= hoje + timedelta(days=30),
@@ -287,7 +237,7 @@ async def gerar_alertas(
                 db.add(alerta)
                 alertas_criados.append("IPVA_EXPIRANDO")
 
-        # 5. Check manutenções agendadas com data no passado
+        # 5. Check manutenções atrasadas
         manutencoes_atrasadas = db.query(Manutencao).filter(
             Manutencao.status == "Agendada",
             Manutencao.data_proxima < hoje
@@ -321,7 +271,7 @@ async def gerar_alertas(
 
         return {
             "success": True,
-            "alertas_criados": len([a for a in alertas_criados]),
+            "alertas_criados": len(alertas_criados),
             "tipos": list(set(alertas_criados)),
             "total_tipos": len(set(alertas_criados)),
         }
@@ -329,3 +279,55 @@ async def gerar_alertas(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Erro ao gerar alertas: {str(e)}")
+
+
+@router.get("/{alerta_id}", summary="Obter alerta por ID")
+async def get_alerta(
+    alerta_id: int,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    alerta = db.query(AlertaHistorico).filter(AlertaHistorico.id == alerta_id).first()
+    if not alerta:
+        raise HTTPException(status_code=404, detail="Alerta não encontrado")
+    return alerta_to_dict(alerta)
+
+
+@router.post("/", summary="Criar novo alerta")
+async def create_alerta(
+    alerta_data: AlertaCreate,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    try:
+        novo_alerta = AlertaHistorico(**alerta_data.model_dump())
+        db.add(novo_alerta)
+        db.commit()
+        db.refresh(novo_alerta)
+        return alerta_to_dict(novo_alerta)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Erro ao criar alerta: {str(e)}")
+
+
+@router.put("/{alerta_id}/resolver", summary="Marcar alerta como resolvido")
+async def resolver_alerta(
+    alerta_id: int,
+    resolver_data: AlertaResolverRequest,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    alerta = db.query(AlertaHistorico).filter(AlertaHistorico.id == alerta_id).first()
+    if not alerta:
+        raise HTTPException(status_code=404, detail="Alerta não encontrado")
+
+    alerta.resolvido = True
+    alerta.data_resolucao = datetime.now()
+    alerta.resolvido_por = resolver_data.resolvido_por or current_user.username
+    alerta.acao_tomada = resolver_data.acao_tomada
+
+    db.commit()
+    db.refresh(alerta)
+    return alerta_to_dict(alerta)
+
+
