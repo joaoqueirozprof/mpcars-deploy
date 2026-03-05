@@ -1,172 +1,123 @@
-from typing import List, Optional
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.auth import get_current_user, TokenData
 from app.models import Veiculo
-from app.schemas.veiculo import VeiculoCreate, VeiculoUpdate, VeiculoStatusUpdate, VeiculoResponse
-from app.schemas.common import PaginatedResponse, MessageResponse
+from app.schemas.veiculo import VeiculoCreate, VeiculoUpdate, VeiculoStatusUpdate
 
 router = APIRouter()
 
 
-@router.get(
-    "/",
-    response_model=PaginatedResponse[VeiculoResponse],
-    summary="Listar veículos"
-)
+def veiculo_to_dict(v):
+    """Convert Veiculo ORM object to dict for JSON serialization."""
+    return {
+        "id": v.id,
+        "marca": v.marca,
+        "modelo": v.modelo,
+        "placa": v.placa,
+        "ano": v.ano,
+        "cor": v.cor,
+        "combustivel": v.combustivel,
+        "empresa_id": v.empresa_id,
+        "km_atual": v.km_atual,
+        "preco_compra": v.preco_compra,
+        "data_compra": v.data_compra.isoformat() if v.data_compra else None,
+        "status": v.status,
+        "tipo_veiculo": v.tipo_veiculo,
+        "chassi": v.chassi,
+        "renavam": v.renavam,
+        "valor_venal": v.valor_venal,
+        "km_referencia": v.km_referencia,
+        "valor_km_extra": v.valor_km_extra,
+        "km_inicio_empresa": v.km_inicio_empresa,
+        "macaco": v.macaco,
+        "estepe": v.estepe,
+        "ferram": v.ferram,
+        "triangulo": v.triangulo,
+        "documento": v.documento,
+        "extintor": v.extintor,
+        "calotas": v.calotas,
+        "tapetes": v.tapetes,
+        "cd_player": v.cd_player,
+        "observacoes": v.observacoes,
+        "data_cadastro": v.data_cadastro.isoformat() if v.data_cadastro else None,
+    }
+
+
+@router.get("/", summary="Listar veículos")
 async def list_veiculos(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
-    status: Optional[str] = Query(None),
+    status_filter: Optional[str] = Query(None, alias="status"),
     empresa_id: Optional[int] = Query(None),
     db: Session = Depends(get_db),
     current_user: TokenData = Depends(get_current_user)
-) -> PaginatedResponse[VeiculoResponse]:
-    """
-    List all veículos with optional filters by status and empresa.
-
-    Args:
-        skip: Number of records to skip
-        limit: Number of records to return
-        status: Filter by status (e.g., 'Disponível', 'Alugado', 'Manutenção')
-        empresa_id: Filter by empresa ID
-        db: Database session
-        current_user: Current authenticated user
-
-    Returns:
-        PaginatedResponse with list of veículos
-    """
+):
+    """List all veículos with optional filters."""
     query = db.query(Veiculo)
 
-    if status:
-        query = query.filter(Veiculo.status == status)
-
+    if status_filter:
+        query = query.filter(Veiculo.status == status_filter)
     if empresa_id:
         query = query.filter(Veiculo.empresa_id == empresa_id)
 
     total = query.count()
     veiculos = query.offset(skip).limit(limit).all()
 
-    return PaginatedResponse(
-        items=veiculos,
-        total=total,
-        page=skip // limit + 1,
-        per_page=limit
-    )
+    return {
+        "items": [veiculo_to_dict(v) for v in veiculos],
+        "total": total,
+        "page": skip // limit + 1,
+        "per_page": limit,
+    }
 
 
-@router.get("/{veiculo_id}", response_model=VeiculoResponse, summary="Obter veículo por ID")
+@router.get("/{veiculo_id}", summary="Obter veículo por ID")
 async def get_veiculo(
     veiculo_id: int,
     db: Session = Depends(get_db),
     current_user: TokenData = Depends(get_current_user)
-) -> VeiculoResponse:
-    """
-    Get a specific veiculo by ID.
-
-    Args:
-        veiculo_id: ID of the veiculo to retrieve
-        db: Database session
-        current_user: Current authenticated user
-
-    Returns:
-        VeiculoResponse with veiculo data
-
-    Raises:
-        HTTPException: If veiculo not found
-    """
+):
     veiculo = db.query(Veiculo).filter(Veiculo.id == veiculo_id).first()
-
     if not veiculo:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Veículo não encontrado"
-        )
-
-    return veiculo
+        raise HTTPException(status_code=404, detail="Veículo não encontrado")
+    return veiculo_to_dict(veiculo)
 
 
-@router.post("/", response_model=VeiculoResponse, summary="Criar novo veículo")
+@router.post("/", summary="Criar novo veículo")
 async def create_veiculo(
     veiculo_data: VeiculoCreate,
     db: Session = Depends(get_db),
     current_user: TokenData = Depends(get_current_user)
-) -> VeiculoResponse:
-    """
-    Create a new veiculo.
-
-    Args:
-        veiculo_data: Data for the new veiculo
-        db: Database session
-        current_user: Current authenticated user
-
-    Returns:
-        VeiculoResponse with created veiculo data
-
-    Raises:
-        HTTPException: If placa already exists
-    """
-    # Check if placa already exists
-    existing_placa = db.query(Veiculo).filter(
-        Veiculo.placa == veiculo_data.placa
-    ).first()
-
+):
+    existing_placa = db.query(Veiculo).filter(Veiculo.placa == veiculo_data.placa).first()
     if existing_placa:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Placa já cadastrada"
-        )
+        raise HTTPException(status_code=400, detail="Placa já cadastrada")
 
     novo_veiculo = Veiculo(**veiculo_data.model_dump())
     db.add(novo_veiculo)
     db.commit()
     db.refresh(novo_veiculo)
+    return veiculo_to_dict(novo_veiculo)
 
-    return novo_veiculo
 
-
-@router.put("/{veiculo_id}", response_model=VeiculoResponse, summary="Atualizar veículo")
+@router.put("/{veiculo_id}", summary="Atualizar veículo")
 async def update_veiculo(
     veiculo_id: int,
     veiculo_data: VeiculoUpdate,
     db: Session = Depends(get_db),
     current_user: TokenData = Depends(get_current_user)
-) -> VeiculoResponse:
-    """
-    Update an existing veiculo.
-
-    Args:
-        veiculo_id: ID of the veiculo to update
-        veiculo_data: Data to update
-        db: Database session
-        current_user: Current authenticated user
-
-    Returns:
-        VeiculoResponse with updated veiculo data
-
-    Raises:
-        HTTPException: If veiculo not found or placa already exists
-    """
+):
     veiculo = db.query(Veiculo).filter(Veiculo.id == veiculo_id).first()
-
     if not veiculo:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Veículo não encontrado"
-        )
+        raise HTTPException(status_code=404, detail="Veículo não encontrado")
 
-    # Check if new placa already exists
     if veiculo_data.placa and veiculo_data.placa != veiculo.placa:
-        existing_placa = db.query(Veiculo).filter(
-            Veiculo.placa == veiculo_data.placa
-        ).first()
+        existing_placa = db.query(Veiculo).filter(Veiculo.placa == veiculo_data.placa).first()
         if existing_placa:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Placa já cadastrada"
-            )
+            raise HTTPException(status_code=400, detail="Placa já cadastrada")
 
     update_data = veiculo_data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
@@ -174,120 +125,48 @@ async def update_veiculo(
 
     db.commit()
     db.refresh(veiculo)
+    return veiculo_to_dict(veiculo)
 
-    return veiculo
 
-
-@router.delete(
-    "/{veiculo_id}",
-    response_model=MessageResponse,
-    summary="Deletar veículo"
-)
+@router.delete("/{veiculo_id}", summary="Deletar veículo")
 async def delete_veiculo(
     veiculo_id: int,
     db: Session = Depends(get_db),
     current_user: TokenData = Depends(get_current_user)
-) -> MessageResponse:
-    """
-    Delete a veiculo.
-
-    Args:
-        veiculo_id: ID of the veiculo to delete
-        db: Database session
-        current_user: Current authenticated user
-
-    Returns:
-        MessageResponse confirming deletion
-
-    Raises:
-        HTTPException: If veiculo not found
-    """
+):
     veiculo = db.query(Veiculo).filter(Veiculo.id == veiculo_id).first()
-
     if not veiculo:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Veículo não encontrado"
-        )
+        raise HTTPException(status_code=404, detail="Veículo não encontrado")
 
     db.delete(veiculo)
     db.commit()
-
-    return MessageResponse(
-        message="Veículo deletado com sucesso",
-        success=True
-    )
+    return {"message": "Veículo deletado com sucesso", "success": True}
 
 
-@router.get("/placa/{placa}", response_model=VeiculoResponse, summary="Buscar veículo por placa")
+@router.get("/placa/{placa}", summary="Buscar veículo por placa")
 async def search_veiculo_by_placa(
     placa: str,
     db: Session = Depends(get_db),
     current_user: TokenData = Depends(get_current_user)
-) -> VeiculoResponse:
-    """
-    Search for a veiculo by its placa (license plate).
-
-    Args:
-        placa: License plate to search for
-        db: Database session
-        current_user: Current authenticated user
-
-    Returns:
-        VeiculoResponse with matching veiculo data
-
-    Raises:
-        HTTPException: If veiculo not found
-    """
-    veiculo = db.query(Veiculo).filter(
-        Veiculo.placa.ilike(placa)
-    ).first()
-
+):
+    veiculo = db.query(Veiculo).filter(Veiculo.placa.ilike(placa)).first()
     if not veiculo:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Veículo não encontrado"
-        )
-
-    return veiculo
+        raise HTTPException(status_code=404, detail="Veículo não encontrado")
+    return veiculo_to_dict(veiculo)
 
 
-@router.patch(
-    "/{veiculo_id}/status",
-    response_model=VeiculoResponse,
-    summary="Atualizar status do veículo"
-)
+@router.patch("/{veiculo_id}/status", summary="Atualizar status do veículo")
 async def update_veiculo_status(
     veiculo_id: int,
     status_data: VeiculoStatusUpdate,
     db: Session = Depends(get_db),
     current_user: TokenData = Depends(get_current_user)
-) -> VeiculoResponse:
-    """
-    Update only the status of a veiculo.
-
-    Args:
-        veiculo_id: ID of the veiculo to update
-        status_data: New status value
-        db: Database session
-        current_user: Current authenticated user
-
-    Returns:
-        VeiculoResponse with updated veiculo data
-
-    Raises:
-        HTTPException: If veiculo not found
-    """
+):
     veiculo = db.query(Veiculo).filter(Veiculo.id == veiculo_id).first()
-
     if not veiculo:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Veículo não encontrado"
-        )
+        raise HTTPException(status_code=404, detail="Veículo não encontrado")
 
     veiculo.status = status_data.status
     db.commit()
     db.refresh(veiculo)
-
-    return veiculo
+    return veiculo_to_dict(veiculo)
