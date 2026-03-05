@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://redis:6379/0"
 
     # Security Configuration
-    SECRET_KEY: str
+    SECRET_KEY: str = "mpcars-secret-key-change-in-production-2024"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 480
 
     # Application Configuration

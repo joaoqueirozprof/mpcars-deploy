@@ -1,47 +1,38 @@
 """
 Database configuration and session management for MPCARS.
+Uses synchronous SQLAlchemy with psycopg2.
 """
-from typing import AsyncGenerator
-from sqlalchemy.ext.asyncio import (
-    AsyncSession,
-    create_async_engine,
-    async_sessionmaker,
-)
-from sqlalchemy.orm import declarative_base
+from typing import Generator
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, declarative_base, Session
 from app.config import get_settings
 
 settings = get_settings()
 
-# Create async engine with PostgreSQL async driver
-engine = create_async_engine(
-    settings.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://"),
+# Create sync engine
+engine = create_engine(
+    settings.DATABASE_URL,
     echo=False,
-    future=True,
+    pool_pre_ping=True,
 )
 
 # Session factory
-SessionLocal = async_sessionmaker(
-    engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-    autoflush=False,
+SessionLocal = sessionmaker(
+    bind=engine,
     autocommit=False,
+    autoflush=False,
 )
 
 # Declarative base for ORM models
 Base = declarative_base()
 
 
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
+def get_db() -> Generator[Session, None, None]:
     """
-    Dependency for FastAPI endpoints to inject AsyncSession.
-
-    Usage:
-        async def some_endpoint(db: AsyncSession = Depends(get_db)):
-            ...
+    Dependency for FastAPI endpoints to inject database Session.
     """
-    async with SessionLocal() as session:
-        try:
-            yield session
-        finally:
-            await session.close()
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

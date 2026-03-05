@@ -34,7 +34,7 @@ services:
     environment:
       DATABASE_URL: postgresql://${DB_USER:-mpcars}:${DB_PASSWORD:-SuaSenhaSegura123}@postgres:5432/${POSTGRES_DB:-mpcars}
       REDIS_URL: redis://redis:6379
-      SECRET_KEY: ${SECRET_KEY}
+      SECRET_KEY: ${SECRET_KEY:-mpcars-secret-key-2024-production}
       ENVIRONMENT: ${ENVIRONMENT:-production}
     volumes:
       - ./backend:/app
@@ -57,7 +57,7 @@ services:
     environment:
       DATABASE_URL: postgresql://${DB_USER:-mpcars}:${DB_PASSWORD:-SuaSenhaSegura123}@postgres:5432/${POSTGRES_DB:-mpcars}
       REDIS_URL: redis://redis:6379
-      SECRET_KEY: ${SECRET_KEY}
+      SECRET_KEY: ${SECRET_KEY:-mpcars-secret-key-2024-production}
       ENVIRONMENT: ${ENVIRONMENT:-production}
     volumes:
       - ./backend:/app
