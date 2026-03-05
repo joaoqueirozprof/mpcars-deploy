@@ -44,7 +44,7 @@ async def list_clientes(
             or_(
                 Cliente.nome.ilike(f"%{search}%"),
                 Cliente.email.ilike(f"%{search}%"),
-                Cliente.documento.ilike(f"%{search}%")
+                Cliente.cpf_cnpj.ilike(f"%{search}%")
             )
         )
 
@@ -110,27 +110,28 @@ async def create_cliente(
     Raises:
         HTTPException: If email or documento already exists
     """
-    # Check if email already exists
-    existing_email = db.query(Cliente).filter(
-        Cliente.email == cliente_data.email
+    # Check if cpf_cnpj already exists
+    existing_cpf = db.query(Cliente).filter(
+        Cliente.cpf_cnpj == cliente_data.cpf_cnpj
     ).first()
 
-    if existing_email:
+    if existing_cpf:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email já cadastrado"
+            detail="CPF/CNPJ já cadastrado"
         )
 
-    # Check if documento already exists
-    existing_doc = db.query(Cliente).filter(
-        Cliente.documento == cliente_data.documento
-    ).first()
+    # Check if email already exists (if provided)
+    if cliente_data.email:
+        existing_email = db.query(Cliente).filter(
+            Cliente.email == cliente_data.email
+        ).first()
 
-    if existing_doc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Documento já cadastrado"
-        )
+        if existing_email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email já cadastrado"
+            )
 
     novo_cliente = Cliente(**cliente_data.model_dump())
     db.add(novo_cliente)
@@ -170,6 +171,17 @@ async def update_cliente(
             detail="Cliente não encontrado"
         )
 
+    # Check if new cpf_cnpj already exists
+    if cliente_data.cpf_cnpj and cliente_data.cpf_cnpj != cliente.cpf_cnpj:
+        existing_cpf = db.query(Cliente).filter(
+            Cliente.cpf_cnpj == cliente_data.cpf_cnpj
+        ).first()
+        if existing_cpf:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="CPF/CNPJ já cadastrado"
+            )
+
     # Check if new email already exists
     if cliente_data.email and cliente_data.email != cliente.email:
         existing_email = db.query(Cliente).filter(
@@ -179,17 +191,6 @@ async def update_cliente(
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Email já cadastrado"
-            )
-
-    # Check if new documento already exists
-    if cliente_data.documento and cliente_data.documento != cliente.documento:
-        existing_doc = db.query(Cliente).filter(
-            Cliente.documento == cliente_data.documento
-        ).first()
-        if existing_doc:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Documento já cadastrado"
             )
 
     update_data = cliente_data.model_dump(exclude_unset=True)
@@ -268,7 +269,7 @@ async def search_clientes(
         or_(
             Cliente.nome.ilike(f"%{termo}%"),
             Cliente.email.ilike(f"%{termo}%"),
-            Cliente.documento.ilike(f"%{termo}%"),
+            Cliente.cpf_cnpj.ilike(f"%{termo}%"),
             Cliente.telefone.ilike(f"%{termo}%")
         )
     ).limit(50).all()

@@ -9,22 +9,28 @@ import Modal from '../components/Modal'
 interface Cliente {
   id: string
   nome: string
-  email: string
-  telefone: string
-  cpf: string
-  cnh: string
-  cnh_validade: string
-  endereco: string
+  cpf_cnpj: string
+  email?: string
+  telefone?: string
+  cnh?: string
+  cnh_validade?: string
+  endereco_residencial?: string
+  cidade?: string
+  estado?: string
+  cep_residencial?: string
 }
 
 interface FormData {
   nome: string
-  email: string
-  telefone: string
-  cpf: string
-  cnh: string
-  cnh_validade: string
-  endereco: string
+  cpf_cnpj: string
+  email?: string
+  telefone?: string
+  cnh?: string
+  cnh_validade?: string
+  endereco_residencial?: string
+  cidade?: string
+  estado?: string
+  cep_residencial?: string
 }
 
 const Clientes: React.FC = () => {
@@ -33,12 +39,15 @@ const Clientes: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [formData, setFormData] = useState<FormData>({
     nome: '',
+    cpf_cnpj: '',
     email: '',
     telefone: '',
-    cpf: '',
     cnh: '',
     cnh_validade: '',
-    endereco: '',
+    endereco_residencial: '',
+    cidade: '',
+    estado: '',
+    cep_residencial: '',
   })
 
   const queryClient = useQueryClient()
@@ -82,12 +91,15 @@ const Clientes: React.FC = () => {
   const resetForm = () => {
     setFormData({
       nome: '',
+      cpf_cnpj: '',
       email: '',
       telefone: '',
-      cpf: '',
       cnh: '',
       cnh_validade: '',
-      endereco: '',
+      endereco_residencial: '',
+      cidade: '',
+      estado: '',
+      cep_residencial: '',
     })
     setEditingId(null)
   }
@@ -100,12 +112,15 @@ const Clientes: React.FC = () => {
   const openEditModal = (cliente: any) => {
     setFormData({
       nome: cliente.nome || '',
+      cpf_cnpj: cliente.cpf_cnpj || '',
       email: cliente.email || '',
       telefone: cliente.telefone || '',
-      cpf: cliente.cpf || '',
       cnh: cliente.cnh || '',
       cnh_validade: cliente.cnh_validade || '',
-      endereco: cliente.endereco || '',
+      endereco_residencial: cliente.endereco_residencial || '',
+      cidade: cliente.cidade || '',
+      estado: cliente.estado || '',
+      cep_residencial: cliente.cep_residencial || '',
     })
     setEditingId(cliente.id)
     setIsModalOpen(true)
@@ -161,7 +176,7 @@ const Clientes: React.FC = () => {
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
         <input
           type="text"
-          placeholder="Buscar por nome, email ou CPF..."
+          placeholder="Buscar por nome, email ou CPF/CNPJ..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
@@ -174,10 +189,11 @@ const Clientes: React.FC = () => {
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Nome</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">CPF/CNPJ</th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Email</th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Telefone</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">CPF</th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">CNH Válidade</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Cidade</th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Ações</th>
             </tr>
           </thead>
@@ -198,9 +214,9 @@ const Clientes: React.FC = () => {
               clientes.map((cliente: any) => (
                 <tr key={cliente.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">{cliente.nome}</td>
-                  <td className="px-6 py-4 text-sm text-gray-700">{cliente.email}</td>
-                  <td className="px-6 py-4 text-sm text-gray-700">{cliente.telefone}</td>
-                  <td className="px-6 py-4 text-sm font-mono text-gray-700">{cliente.cpf}</td>
+                  <td className="px-6 py-4 text-sm font-mono text-gray-700">{cliente.cpf_cnpj}</td>
+                  <td className="px-6 py-4 text-sm text-gray-700">{cliente.email || '-'}</td>
+                  <td className="px-6 py-4 text-sm text-gray-700">{cliente.telefone || '-'}</td>
                   <td className="px-6 py-4 text-sm">
                     {cliente.cnh_validade ? (
                       <span
@@ -216,6 +232,7 @@ const Clientes: React.FC = () => {
                       <span className="text-gray-500 text-xs">-</span>
                     )}
                   </td>
+                  <td className="px-6 py-4 text-sm text-gray-700">{cliente.cidade || '-'}</td>
                   <td className="px-6 py-4 text-sm">
                     <div className="flex gap-2">
                       <button
@@ -248,84 +265,126 @@ const Clientes: React.FC = () => {
         title={editingId ? 'Editar Cliente' : 'Novo Cliente'}
       >
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+              <input
+                type="text"
+                name="nome"
+                value={formData.nome}
+                onChange={handleInputChange}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">CPF/CNPJ</label>
+              <input
+                type="text"
+                name="cpf_cnpj"
+                value={formData.cpf_cnpj}
+                onChange={handleInputChange}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
+              <input
+                type="tel"
+                name="telefone"
+                value={formData.telefone}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">CNH</label>
+              <input
+                type="text"
+                name="cnh"
+                value={formData.cnh}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">CNH Válidade</label>
+              <input
+                type="date"
+                name="cnh_validade"
+                value={formData.cnh_validade}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+          </div>
+
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Endereço Residencial</label>
             <input
               type="text"
-              name="nome"
-              value={formData.nome}
-              onChange={handleInputChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
-            <input
-              type="tel"
-              name="telefone"
-              value={formData.telefone}
+              name="endereco_residencial"
+              value={formData.endereco_residencial}
               onChange={handleInputChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">CPF</label>
-            <input
-              type="text"
-              name="cpf"
-              value={formData.cpf}
-              onChange={handleInputChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-          </div>
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Cidade</label>
+              <input
+                type="text"
+                name="cidade"
+                value={formData.cidade}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">CNH</label>
-            <input
-              type="text"
-              name="cnh"
-              value={formData.cnh}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+              <input
+                type="text"
+                name="estado"
+                value={formData.estado}
+                onChange={handleInputChange}
+                maxLength={2}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary uppercase"
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">CNH Válidade</label>
-            <input
-              type="date"
-              name="cnh_validade"
-              value={formData.cnh_validade}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Endereço</label>
-            <textarea
-              name="endereco"
-              value={formData.endereco}
-              onChange={handleInputChange}
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">CEP</label>
+              <input
+                type="text"
+                name="cep_residencial"
+                value={formData.cep_residencial}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="00000-000"
+              />
+            </div>
           </div>
 
           <div className="flex gap-2 pt-4 border-t">

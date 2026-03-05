@@ -7,18 +7,34 @@ import Modal from '../components/Modal'
 interface Empresa {
   id: string
   nome: string
+  razao_social: string
   cnpj: string
   endereco: string
+  numero: string
+  bairro: string
+  cidade: string
+  estado: string
+  cep: string
   telefone: string
   email: string
+  responsavel: string
+  ativa: boolean
 }
 
 interface FormData {
   nome: string
+  razao_social: string
   cnpj: string
   endereco: string
+  numero: string
+  bairro: string
+  cidade: string
+  estado: string
+  cep: string
   telefone: string
   email: string
+  responsavel: string
+  ativa: boolean
 }
 
 const Empresas: React.FC = () => {
@@ -27,10 +43,18 @@ const Empresas: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [formData, setFormData] = useState<FormData>({
     nome: '',
+    razao_social: '',
     cnpj: '',
     endereco: '',
+    numero: '',
+    bairro: '',
+    cidade: '',
+    estado: 'RN',
+    cep: '',
     telefone: '',
     email: '',
+    responsavel: '',
+    ativa: true,
   })
 
   const queryClient = useQueryClient()
@@ -74,10 +98,18 @@ const Empresas: React.FC = () => {
   const resetForm = () => {
     setFormData({
       nome: '',
+      razao_social: '',
       cnpj: '',
       endereco: '',
+      numero: '',
+      bairro: '',
+      cidade: '',
+      estado: 'RN',
+      cep: '',
       telefone: '',
       email: '',
+      responsavel: '',
+      ativa: true,
     })
     setEditingId(null)
   }
@@ -90,10 +122,18 @@ const Empresas: React.FC = () => {
   const openEditModal = (empresa: any) => {
     setFormData({
       nome: empresa.nome || '',
+      razao_social: empresa.razao_social || '',
       cnpj: empresa.cnpj || '',
       endereco: empresa.endereco || '',
+      numero: empresa.numero || '',
+      bairro: empresa.bairro || '',
+      cidade: empresa.cidade || '',
+      estado: empresa.estado || 'RN',
+      cep: empresa.cep || '',
       telefone: empresa.telefone || '',
       email: empresa.email || '',
+      responsavel: empresa.responsavel || '',
+      ativa: empresa.ativa !== undefined ? empresa.ativa : true,
     })
     setEditingId(empresa.id)
     setIsModalOpen(true)
@@ -174,6 +214,11 @@ const Empresas: React.FC = () => {
 
               <div className="p-4 space-y-3">
                 <div>
+                  <p className="text-xs text-gray-500 font-semibold">Razão Social</p>
+                  <p className="text-xs text-gray-700">{empresa.razao_social}</p>
+                </div>
+
+                <div>
                   <p className="text-xs text-gray-600 font-semibold">CNPJ</p>
                   <p className="font-mono font-bold text-sm">{empresa.cnpj}</p>
                 </div>
@@ -181,7 +226,7 @@ const Empresas: React.FC = () => {
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center gap-2 text-gray-700 break-all">
                     <Phone size={16} className="text-primary flex-shrink-0" />
-                    <span>{empresa.telefone}</span>
+                    <span className="text-xs">{empresa.telefone}</span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-700 break-all">
                     <Mail size={16} className="text-primary flex-shrink-0" />
@@ -189,7 +234,7 @@ const Empresas: React.FC = () => {
                   </div>
                   <div className="flex items-start gap-2 text-gray-700">
                     <MapPin size={16} className="text-primary mt-0.5 flex-shrink-0" />
-                    <span className="text-sm">{empresa.endereco}</span>
+                    <span className="text-xs">{empresa.cidade}, {empresa.estado}</span>
                   </div>
                 </div>
 
@@ -222,51 +267,147 @@ const Empresas: React.FC = () => {
         title={editingId ? 'Editar Empresa' : 'Nova Empresa'}
       >
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
-            <input
-              type="text"
-              name="nome"
-              value={formData.nome}
-              onChange={handleInputChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+              <input
+                type="text"
+                name="nome"
+                value={formData.nome}
+                onChange={handleInputChange}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Razão Social</label>
+              <input
+                type="text"
+                name="razao_social"
+                value={formData.razao_social}
+                onChange={handleInputChange}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">CNPJ</label>
-            <input
-              type="text"
-              name="cnpj"
-              value={formData.cnpj}
-              onChange={handleInputChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">CNPJ</label>
+              <input
+                type="text"
+                name="cnpj"
+                value={formData.cnpj}
+                onChange={handleInputChange}
+                required
+                placeholder="00.000.000/0000-00"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Responsável</label>
+              <input
+                type="text"
+                name="responsavel"
+                value={formData.responsavel}
+                onChange={handleInputChange}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Endereço</label>
-            <textarea
+            <input
+              type="text"
               name="endereco"
               value={formData.endereco}
               onChange={handleInputChange}
               required
-              rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
-            <input
-              type="tel"
-              name="telefone"
-              value={formData.telefone}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            />
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Número</label>
+              <input
+                type="text"
+                name="numero"
+                value={formData.numero}
+                onChange={handleInputChange}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Bairro</label>
+              <input
+                type="text"
+                name="bairro"
+                value={formData.bairro}
+                onChange={handleInputChange}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">CEP</label>
+              <input
+                type="text"
+                name="cep"
+                value={formData.cep}
+                onChange={handleInputChange}
+                required
+                placeholder="00000-000"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Cidade</label>
+              <input
+                type="text"
+                name="cidade"
+                value={formData.cidade}
+                onChange={handleInputChange}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+              <input
+                type="text"
+                name="estado"
+                value={formData.estado}
+                onChange={handleInputChange}
+                required
+                maxLength={2}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary uppercase"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
+              <input
+                type="tel"
+                name="telefone"
+                value={formData.telefone}
+                onChange={handleInputChange}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
           </div>
 
           <div>
@@ -276,8 +417,22 @@ const Empresas: React.FC = () => {
               name="email"
               value={formData.email}
               onChange={handleInputChange}
+              required
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             />
+          </div>
+
+          <div>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                name="ativa"
+                checked={formData.ativa}
+                onChange={(e) => setFormData({ ...formData, ativa: e.target.checked })}
+                className="rounded border-gray-300 focus:ring-2 focus:ring-primary"
+              />
+              <span className="text-sm font-medium text-gray-700">Empresa Ativa</span>
+            </label>
           </div>
 
           <div className="flex gap-2 pt-4 border-t">

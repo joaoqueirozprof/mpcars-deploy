@@ -10,12 +10,14 @@ interface Veiculo {
   modelo: string
   placa: string
   ano: number
-  status: 'disponivel' | 'alugado' | 'manutencao'
-  km: number
+  status: string
+  km_atual: number
   cor: string
   empresa_id: string
-  chassi: string
-  renavam: string
+  combustivel: string
+  tipo_veiculo: string
+  chassi?: string
+  renavam?: string
 }
 
 interface FormData {
@@ -23,12 +25,14 @@ interface FormData {
   modelo: string
   placa: string
   ano: number
-  km: number
+  km_atual: number
   cor: string
   status: string
   empresa_id: string
-  chassi: string
-  renavam: string
+  combustivel: string
+  tipo_veiculo: string
+  chassi?: string
+  renavam?: string
 }
 
 type StatusFilter = 'todos' | 'disponivel' | 'alugado' | 'manutencao'
@@ -43,10 +47,12 @@ const Veiculos: React.FC = () => {
     modelo: '',
     placa: '',
     ano: new Date().getFullYear(),
-    km: 0,
+    km_atual: 0,
     cor: '',
-    status: 'disponivel',
+    status: 'Disponível',
     empresa_id: '',
+    combustivel: '',
+    tipo_veiculo: '',
     chassi: '',
     renavam: '',
   })
@@ -55,7 +61,7 @@ const Veiculos: React.FC = () => {
     queryKey: ['veiculos', statusFilter],
     queryFn: () =>
       veiculosAPI.list({
-        status: statusFilter === 'todos' ? undefined : statusFilter,
+        status: statusFilterMap[statusFilter],
       }),
     staleTime: 5 * 60 * 1000,
   })
@@ -89,17 +95,17 @@ const Veiculos: React.FC = () => {
   const veiculos: Veiculo[] = veiculosData?.data || []
 
   const statusConfig: Record<string, { label: string; color: string; bgColor: string }> = {
-    disponivel: {
+    'Disponível': {
       label: 'Disponível',
       color: 'text-success',
       bgColor: 'bg-green-100',
     },
-    alugado: {
+    'Alugado': {
       label: 'Alugado',
       color: 'text-primary',
       bgColor: 'bg-blue-100',
     },
-    manutencao: {
+    'Manutenção': {
       label: 'Manutenção',
       color: 'text-warning',
       bgColor: 'bg-yellow-100',
@@ -113,16 +119,25 @@ const Veiculos: React.FC = () => {
     { value: 'manutencao', label: 'Manutenção' },
   ]
 
+  const statusFilterMap: Record<StatusFilter, string | undefined> = {
+    todos: undefined,
+    disponivel: 'Disponível',
+    alugado: 'Alugado',
+    manutencao: 'Manutenção',
+  }
+
   const resetForm = () => {
     setFormData({
       marca: '',
       modelo: '',
       placa: '',
       ano: new Date().getFullYear(),
-      km: 0,
+      km_atual: 0,
       cor: '',
-      status: 'disponivel',
+      status: 'Disponível',
       empresa_id: '',
+      combustivel: '',
+      tipo_veiculo: '',
       chassi: '',
       renavam: '',
     })
@@ -137,12 +152,14 @@ const Veiculos: React.FC = () => {
         modelo: veiculo.modelo,
         placa: veiculo.placa,
         ano: veiculo.ano,
-        km: veiculo.km,
+        km_atual: veiculo.km_atual,
         cor: veiculo.cor,
         status: veiculo.status,
         empresa_id: veiculo.empresa_id,
-        chassi: veiculo.chassi,
-        renavam: veiculo.renavam,
+        combustivel: veiculo.combustivel,
+        tipo_veiculo: veiculo.tipo_veiculo,
+        chassi: veiculo.chassi || '',
+        renavam: veiculo.renavam || '',
       })
     } else {
       resetForm()
@@ -239,7 +256,18 @@ const Veiculos: React.FC = () => {
                     </div>
                     <div>
                       <p className="text-gray-600">KM</p>
-                      <p className="font-semibold">{veiculo.km.toLocaleString('pt-BR')}</p>
+                      <p className="font-semibold">{veiculo.km_atual.toLocaleString('pt-BR')}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <p className="text-gray-600">Combustível</p>
+                      <p className="font-semibold text-xs">{veiculo.combustivel}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600">Tipo</p>
+                      <p className="font-semibold text-xs">{veiculo.tipo_veiculo}</p>
                     </div>
                   </div>
 
@@ -338,13 +366,13 @@ const Veiculos: React.FC = () => {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">KM</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">KM Atual</label>
               <input
                 type="number"
-                value={formData.km}
-                onChange={(e) => setFormData({ ...formData, km: parseInt(e.target.value) })}
+                value={formData.km_atual}
+                onChange={(e) => setFormData({ ...formData, km_atual: parseFloat(e.target.value) })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                required
+                step="0.1"
               />
             </div>
             <div>
@@ -361,26 +389,62 @@ const Veiculos: React.FC = () => {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Combustível</label>
+              <select
+                value={formData.combustivel}
+                onChange={(e) => setFormData({ ...formData, combustivel: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                required
+              >
+                <option value="">Selecione</option>
+                <option value="Gasolina">Gasolina</option>
+                <option value="Diesel">Diesel</option>
+                <option value="Álcool">Álcool</option>
+                <option value="Flex">Flex</option>
+                <option value="Elétrico">Elétrico</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Veículo</label>
+              <select
+                value={formData.tipo_veiculo}
+                onChange={(e) => setFormData({ ...formData, tipo_veiculo: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                required
+              >
+                <option value="">Selecione</option>
+                <option value="Sedan">Sedan</option>
+                <option value="SUV">SUV</option>
+                <option value="Hatchback">Hatchback</option>
+                <option value="Perua">Perua</option>
+                <option value="Pickup">Pickup</option>
+                <option value="Van">Van</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Empresa ID</label>
+              <input
+                type="number"
+                value={formData.empresa_id}
+                onChange={(e) => setFormData({ ...formData, empresa_id: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                required
+              />
+            </div>
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
               <select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
               >
-                <option value="disponivel">Disponível</option>
-                <option value="alugado">Alugado</option>
-                <option value="manutencao">Manutenção</option>
+                <option value="Disponível">Disponível</option>
+                <option value="Alugado">Alugado</option>
+                <option value="Manutenção">Manutenção</option>
               </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Empresa ID</label>
-              <input
-                type="text"
-                value={formData.empresa_id}
-                onChange={(e) => setFormData({ ...formData, empresa_id: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                required
-              />
             </div>
           </div>
 
@@ -392,17 +456,15 @@ const Veiculos: React.FC = () => {
                 value={formData.chassi}
                 onChange={(e) => setFormData({ ...formData, chassi: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">RENAVAM</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Renavam</label>
               <input
                 type="text"
                 value={formData.renavam}
                 onChange={(e) => setFormData({ ...formData, renavam: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                required
               />
             </div>
           </div>
