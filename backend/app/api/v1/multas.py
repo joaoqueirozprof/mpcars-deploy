@@ -1,6 +1,6 @@
 from typing import Optional
 from datetime import date
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, model_validator
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
@@ -15,12 +15,11 @@ class MultaCreate(BaseModel):
     veiculo_id: int
     contrato_id: Optional[int] = None
     cliente_id: Optional[int] = None
-    # Alternative fields MUST come before canonical fields for validator ordering
-    data_multa: Optional[date] = None
     data_infracao: Optional[date] = None
+    data_multa: Optional[date] = None
     data_notificacao: Optional[date] = None
-    numero_infracao: Optional[str] = None
     auto_infracao: Optional[str] = None
+    numero_infracao: Optional[str] = None
     descricao: str
     valor: float
     pontos: int = 0
@@ -30,25 +29,15 @@ class MultaCreate(BaseModel):
     data_pagamento: Optional[date] = None
     observacoes: Optional[str] = None
 
-    @field_validator('data_infracao', mode='before')
+    @model_validator(mode='before')
     @classmethod
-    def validate_data_infracao(cls, v, info):
-        if v is not None:
-            return v
-        data = info.data if hasattr(info, 'data') else {}
-        if data.get('data_multa'):
-            return data['data_multa']
-        return None
-
-    @field_validator('auto_infracao', mode='before')
-    @classmethod
-    def validate_auto_infracao(cls, v, info):
-        if v is not None:
-            return v
-        data = info.data if hasattr(info, 'data') else {}
-        if data.get('numero_infracao'):
-            return data['numero_infracao']
-        return None
+    def map_alternative_fields(cls, data):
+        if isinstance(data, dict):
+            if not data.get('data_infracao') and data.get('data_multa'):
+                data['data_infracao'] = data['data_multa']
+            if not data.get('auto_infracao') and data.get('numero_infracao'):
+                data['auto_infracao'] = data['numero_infracao']
+        return data
 
 
 class MultaUpdate(BaseModel):
@@ -66,15 +55,13 @@ class MultaUpdate(BaseModel):
     data_pagamento: Optional[date] = None
     observacoes: Optional[str] = None
 
-    @field_validator('data_infracao', mode='before')
+    @model_validator(mode='before')
     @classmethod
-    def validate_data_infracao(cls, v, info):
-        if v is not None:
-            return v
-        data = info.data if hasattr(info, 'data') else {}
-        if data.get('data_multa'):
-            return data['data_multa']
-        return None
+    def map_alternative_fields(cls, data):
+        if isinstance(data, dict):
+            if not data.get('data_infracao') and data.get('data_multa'):
+                data['data_infracao'] = data['data_multa']
+        return data
 
 
 def multa_to_dict(m):
@@ -151,7 +138,6 @@ async def create_multa(
     data.pop("data_multa", None)
     data.pop("numero_infracao", None)
 
-    # Ensure data_infracao has a value (nullable=False in DB)
     if not data.get("data_infracao"):
         from datetime import date as date_type
         data["data_infracao"] = date_type.today()

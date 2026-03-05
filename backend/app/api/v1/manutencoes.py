@@ -1,6 +1,6 @@
 from typing import Optional
 from datetime import date
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, model_validator
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
@@ -15,48 +15,29 @@ class ManutencaoCreate(BaseModel):
     veiculo_id: int
     tipo: str = "Preventiva"
     descricao: str
-    # Alternative fields MUST come before canonical fields for validator ordering
-    km_manutencao: Optional[float] = None
     km_realizada: Optional[float] = None
     km_proxima: Optional[float] = None
-    data_manutencao: Optional[date] = None
+    km_manutencao: Optional[float] = None
     data_realizada: Optional[date] = None
+    data_manutencao: Optional[date] = None
     data_proxima: Optional[date] = None
-    valor: Optional[float] = None
     custo: Optional[float] = 0
+    valor: Optional[float] = None
     oficina: Optional[str] = None
     status: str = "Agendada"
     observacoes: Optional[str] = None
 
-    @field_validator('km_realizada', mode='before')
+    @model_validator(mode='before')
     @classmethod
-    def validate_km(cls, v, info):
-        if v is not None:
-            return v
-        data = info.data if hasattr(info, 'data') else {}
-        if data.get('km_manutencao'):
-            return data['km_manutencao']
-        return None
-
-    @field_validator('data_realizada', mode='before')
-    @classmethod
-    def validate_data(cls, v, info):
-        if v is not None:
-            return v
-        data = info.data if hasattr(info, 'data') else {}
-        if data.get('data_manutencao'):
-            return data['data_manutencao']
-        return None
-
-    @field_validator('custo', mode='before')
-    @classmethod
-    def validate_custo(cls, v, info):
-        if v is not None and v != 0:
-            return v
-        data = info.data if hasattr(info, 'data') else {}
-        if data.get('valor'):
-            return data['valor']
-        return v if v is not None else 0
+    def map_alternative_fields(cls, data):
+        if isinstance(data, dict):
+            if data.get('km_realizada') is None and data.get('km_manutencao') is not None:
+                data['km_realizada'] = data['km_manutencao']
+            if not data.get('data_realizada') and data.get('data_manutencao'):
+                data['data_realizada'] = data['data_manutencao']
+            if (data.get('custo') is None or data.get('custo') == 0) and data.get('valor') is not None:
+                data['custo'] = data['valor']
+        return data
 
 
 class ManutencaoUpdate(BaseModel):

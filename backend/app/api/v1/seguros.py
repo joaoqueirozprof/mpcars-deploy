@@ -1,6 +1,6 @@
 from typing import Optional
 from datetime import date
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, model_validator
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
@@ -18,36 +18,27 @@ class SeguroCreate(BaseModel):
     tipo_seguro: str = "Completo"
     tipo_cobertura: Optional[str] = None
     data_inicio: date
-    # Alternative fields MUST come before canonical fields for validator ordering
-    data_fim: Optional[date] = None
     data_vencimento: Optional[date] = None
-    valor_premio: Optional[float] = None
+    data_fim: Optional[date] = None
     valor: Optional[float] = None
+    valor_premio: Optional[float] = None
     valor_franquia: float = 0
     cobertura: Optional[str] = None
     quantidade_parcelas: int = 1
     status: str = "Ativo"
     observacoes: Optional[str] = None
 
-    @field_validator('data_vencimento', mode='before')
+    @model_validator(mode='before')
     @classmethod
-    def validate_data_vencimento(cls, v, info):
-        if v is not None:
-            return v
-        data = info.data if hasattr(info, 'data') else {}
-        if data.get('data_fim'):
-            return data['data_fim']
-        return None
-
-    @field_validator('valor', mode='before')
-    @classmethod
-    def validate_valor(cls, v, info):
-        if v is not None:
-            return v
-        data = info.data if hasattr(info, 'data') else {}
-        if data.get('valor_premio'):
-            return data['valor_premio']
-        return None
+    def map_alternative_fields(cls, data):
+        if isinstance(data, dict):
+            if not data.get('data_vencimento') and data.get('data_fim'):
+                data['data_vencimento'] = data['data_fim']
+            if data.get('valor') is None and data.get('valor_premio') is not None:
+                data['valor'] = data['valor_premio']
+            if not data.get('cobertura') and data.get('tipo_cobertura'):
+                data['cobertura'] = data['tipo_cobertura']
+        return data
 
 
 class SeguroUpdate(BaseModel):
@@ -55,35 +46,25 @@ class SeguroUpdate(BaseModel):
     numero_apolice: Optional[str] = None
     tipo_seguro: Optional[str] = None
     data_inicio: Optional[date] = None
-    data_fim: Optional[date] = None
     data_vencimento: Optional[date] = None
-    valor_premio: Optional[float] = None
+    data_fim: Optional[date] = None
     valor: Optional[float] = None
+    valor_premio: Optional[float] = None
     valor_franquia: Optional[float] = None
     cobertura: Optional[str] = None
     quantidade_parcelas: Optional[int] = None
     status: Optional[str] = None
     observacoes: Optional[str] = None
 
-    @field_validator('data_vencimento', mode='before')
+    @model_validator(mode='before')
     @classmethod
-    def validate_data_vencimento(cls, v, info):
-        if v is not None:
-            return v
-        data = info.data if hasattr(info, 'data') else {}
-        if data.get('data_fim'):
-            return data['data_fim']
-        return None
-
-    @field_validator('valor', mode='before')
-    @classmethod
-    def validate_valor(cls, v, info):
-        if v is not None:
-            return v
-        data = info.data if hasattr(info, 'data') else {}
-        if data.get('valor_premio'):
-            return data['valor_premio']
-        return None
+    def map_alternative_fields(cls, data):
+        if isinstance(data, dict):
+            if not data.get('data_vencimento') and data.get('data_fim'):
+                data['data_vencimento'] = data['data_fim']
+            if data.get('valor') is None and data.get('valor_premio') is not None:
+                data['valor'] = data['valor_premio']
+        return data
 
 
 def seguro_to_dict(s):
@@ -154,16 +135,13 @@ async def create_seguro(
         raise HTTPException(status_code=404, detail="Veículo não encontrado")
 
     data = seguro_data.model_dump()
-    # Remove alternative field names
     data.pop("data_fim", None)
     data.pop("valor_premio", None)
     data.pop("tipo_cobertura", None)
 
-    # Ensure data_vencimento has a value (nullable=False in DB)
     if not data.get("data_vencimento"):
         data["data_vencimento"] = data["data_inicio"]
 
-    # Ensure valor has a value (nullable=False in DB)
     if data.get("valor") is None:
         data["valor"] = 0
 
