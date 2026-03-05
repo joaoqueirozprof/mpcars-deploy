@@ -4,16 +4,18 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: mpcars-db
+    env_file:
+      - .env
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-mpcars}
-      POSTGRES_USER: ${DB_USER:-mpcars}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-MpCars2026Secure!}
+      POSTGRES_DB: mpcars
+      POSTGRES_USER: mpcars
+      POSTGRES_PASSWORD: "MpCars2026Secure!"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-mpcars}"]
+      test: ["CMD-SHELL", "pg_isready -U mpcars"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -31,11 +33,13 @@ services:
   backend:
     build: ./backend
     container_name: mpcars-api
+    env_file:
+      - .env
     environment:
-      DATABASE_URL: postgresql://${DB_USER:-mpcars}:${DB_PASSWORD:-MpCars2026Secure!}@postgres:5432/${POSTGRES_DB:-mpcars}
+      DATABASE_URL: "postgresql://mpcars:MpCars2026Secure!@postgres:5432/mpcars"
       REDIS_URL: redis://redis:6379
-      SECRET_KEY: ${SECRET_KEY:-mpcars-secret-key-2024-production}
-      ENVIRONMENT: ${ENVIRONMENT:-production}
+      SECRET_KEY: mpcars-secret-key-2024-production
+      ENVIRONMENT: production
     volumes:
       - backend_pdfs:/app/storage/pdfs
       - backend_backups:/app/storage/backups
@@ -52,11 +56,13 @@ services:
   celery:
     build: ./backend
     container_name: mpcars-celery
+    env_file:
+      - .env
     environment:
-      DATABASE_URL: postgresql://${DB_USER:-mpcars}:${DB_PASSWORD:-MpCars2026Secure!}@postgres:5432/${POSTGRES_DB:-mpcars}
+      DATABASE_URL: "postgresql://mpcars:MpCars2026Secure!@postgres:5432/mpcars"
       REDIS_URL: redis://redis:6379
-      SECRET_KEY: ${SECRET_KEY:-mpcars-secret-key-2024-production}
-      ENVIRONMENT: ${ENVIRONMENT:-production}
+      SECRET_KEY: mpcars-secret-key-2024-production
+      ENVIRONMENT: production
     volumes:
       - backend_pdfs:/app/storage/pdfs
       - backend_backups:/app/storage/backups
