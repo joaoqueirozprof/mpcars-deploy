@@ -45,8 +45,12 @@ async def lifespan(app: FastAPI):
 
     # Drop and recreate all tables (fresh deploy, no real data yet)
     try:
-        Base.metadata.drop_all(bind=engine)
-        logger.info("All tables dropped for fresh schema creation")
+        from sqlalchemy import text
+        with engine.connect() as conn:
+            conn.execute(text("DROP SCHEMA public CASCADE"))
+            conn.execute(text("CREATE SCHEMA public"))
+            conn.commit()
+        logger.info("Schema dropped and recreated with CASCADE")
         Base.metadata.create_all(bind=engine)
         logger.info("Database tables created successfully with correct schema")
     except Exception as e:
