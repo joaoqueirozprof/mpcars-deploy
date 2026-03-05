@@ -44,16 +44,10 @@ async def lifespan(app: FastAPI):
     """Startup and shutdown events."""
     logger.info("Starting MPCARS API application...")
 
-    # Drop and recreate all tables (fresh deploy, no real data yet)
+    # Create tables (only creates if they don't exist)
     try:
-        from sqlalchemy import text
-        with engine.connect() as conn:
-            conn.execute(text("DROP SCHEMA public CASCADE"))
-            conn.execute(text("CREATE SCHEMA public"))
-            conn.commit()
-        logger.info("Schema dropped and recreated with CASCADE")
         Base.metadata.create_all(bind=engine)
-        logger.info("Database tables created successfully with correct schema")
+        logger.info("Database tables created/verified successfully")
     except Exception as e:
         logger.error(f"Error creating database tables: {e}")
 
