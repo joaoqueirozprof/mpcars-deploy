@@ -33,11 +33,22 @@ def contrato_to_dict(c):
         "valor_diaria": c.valor_diaria,
         "valor_hora_extra": c.valor_hora_extra,
         "valor_km_excedente": c.valor_km_excedente,
+        "hora_extra": c.hora_extra,
+        "km_excedente": c.km_excedente,
         "subtotal": c.subtotal,
         "avarias": c.avarias,
         "desconto": c.desconto,
         "total": c.total,
         "despesas_extras": c.despesas_extras,
+        "prorrogacoes_valor": c.prorrogacoes_valor,
+        "combustivel_saida": c.combustivel_saida,
+        "combustivel_entrada": c.combustivel_entrada,
+        "cartao_tipo": c.cartao_tipo,
+        "cartao_numero": c.cartao_numero,
+        "cartao_codigo": c.cartao_codigo,
+        "cartao_preaut": c.cartao_preaut,
+        "cartao_validade": c.cartao_validade,
+        "cartao_valor": c.cartao_valor,
         "status": c.status,
         "observacoes": c.observacoes,
         "data_cadastro": c.data_cadastro.isoformat() if c.data_cadastro else None,
@@ -86,13 +97,39 @@ async def get_contrato(
         raise HTTPException(status_code=404, detail="Contrato não encontrado")
 
     result = contrato_to_dict(contrato)
-    # Add related data
+    # Add full related data for contract printing
     try:
         if contrato.cliente:
-            result["cliente_nome"] = contrato.cliente.nome
+            c = contrato.cliente
+            result["cliente"] = {
+                "id": c.id, "nome": c.nome, "cpf_cnpj": c.cpf_cnpj,
+                "endereco_residencial": c.endereco_residencial,
+                "numero_residencial": c.numero_residencial,
+                "bairro_residencial": c.bairro_residencial,
+                "cidade": c.cidade, "estado": c.estado,
+                "cep_residencial": c.cep_residencial,
+                "telefone": c.telefone, "telefone2": c.telefone2,
+                "email": c.email, "cnh": c.cnh,
+                "cnh_categoria": c.cnh_categoria,
+                "cnh_validade": c.cnh_validade.isoformat() if c.cnh_validade else None,
+                "rg": c.rg, "orgao_emissor": c.orgao_emissor,
+            }
+            result["cliente_nome"] = c.nome
         if contrato.veiculo:
-            result["veiculo_placa"] = contrato.veiculo.placa
-            result["veiculo_modelo"] = contrato.veiculo.modelo
+            v = contrato.veiculo
+            result["veiculo"] = {
+                "id": v.id, "marca": v.marca, "modelo": v.modelo,
+                "placa": v.placa, "ano": v.ano, "cor": v.cor,
+                "combustivel": v.combustivel, "km_atual": v.km_atual,
+                "tipo_veiculo": v.tipo_veiculo,
+                "macaco": v.macaco, "estepe": v.estepe,
+                "ferram": v.ferram, "triangulo": v.triangulo,
+                "documento": v.documento, "extintor": v.extintor,
+                "calotas": v.calotas, "tapetes": v.tapetes,
+                "cd_player": v.cd_player,
+            }
+            result["veiculo_placa"] = v.placa
+            result["veiculo_modelo"] = v.modelo
     except Exception:
         pass
 
