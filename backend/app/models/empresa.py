@@ -42,6 +42,7 @@ class Empresa(Base):
     usos_veiculo = relationship("UsoVeiculoEmpresa", back_populates="empresa")
     relatorios_nf = relationship("RelatorioNF", back_populates="empresa")
     motoristas_empresa = relationship("MotoristaEmpresa", back_populates="empresa")
+    despesas_operacionais = relationship("DespesaOperacional", back_populates="empresa")
 
     def __repr__(self) -> str:
         return f"<Empresa(id={self.id}, nome={self.nome}, cnpj={self.cnpj})>"
