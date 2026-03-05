@@ -3,7 +3,7 @@ version: '3.8'
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: mpcars_postgres
+    container_name: mpcars-db
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-mpcars}
       POSTGRES_USER: ${DB_USER:-mpcars}
@@ -22,9 +22,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: mpcars_redis
-    ports:
-      - "6379:6379"
+    container_name: mpcars-redis
     volumes:
       - redis_data:/data
     networks:
@@ -32,7 +30,7 @@ services:
 
   backend:
     build: ./backend
-    container_name: mpcars_backend
+    container_name: mpcars-api
     environment:
       DATABASE_URL: postgresql://${DB_USER:-mpcars}:${DB_PASSWORD:-SuaSenhaSegura123}@postgres:5432/${POSTGRES_DB:-mpcars}
       REDIS_URL: redis://redis:6379
@@ -43,7 +41,7 @@ services:
       - backend_pdfs:/app/storage/pdfs
       - backend_backups:/app/storage/backups
     ports:
-      - "8000:8000"
+      - "8001:8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -55,7 +53,7 @@ services:
 
   celery:
     build: ./backend
-    container_name: mpcars_celery
+    container_name: mpcars-celery
     environment:
       DATABASE_URL: postgresql://${DB_USER:-mpcars}:${DB_PASSWORD:-SuaSenhaSegura123}@postgres:5432/${POSTGRES_DB:-mpcars}
       REDIS_URL: redis://redis:6379
@@ -74,9 +72,9 @@ services:
 
   frontend:
     build: ./frontend
-    container_name: mpcars_frontend
+    container_name: mpcars-web
     ports:
-      - "3000:3000"
+      - "3001:80"
     depends_on:
       - backend
     networks:
@@ -84,10 +82,10 @@ services:
 
   nginx:
     build: ./nginx
-    container_name: mpcars_nginx
+    container_name: mpcars-proxy
     ports:
-      - "80:80"
-      - "443:443"
+      - "8090:80"
+      - "8444:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
@@ -100,7 +98,7 @@ services:
 
   portainer:
     image: portainer/portainer-ce:latest
-    container_name: mpcars_portainer
+    container_name: mpcars-portainer
     ports:
       - "9000:9000"
     volumes:
@@ -111,12 +109,12 @@ services:
 
   pgadmin:
     image: dpage/pgadmin4:latest
-    container_name: mpcars_pgadmin
+    container_name: mpcars-pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@mpcars.com}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
     ports:
-      - "8080:80"
+      - "8085:80"
     depends_on:
       - postgres
     networks:
