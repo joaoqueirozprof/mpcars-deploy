@@ -3,7 +3,7 @@ from fastapi import APIRouter
 # Import all routers
 from app.api.v1 import auth, clientes, veiculos, contratos, empresas
 from app.api.v1 import dashboard, financeiro, configuracoes
-from app.api.v1 import seguros, multas, manutencoes, reservas, relatorios
+from app.api.v1 import seguros, multas, manutencoes, reservas, relatorios, ipva
 
 # Create the main router with all subrouters
 router = APIRouter()
@@ -22,3 +22,4 @@ router.include_router(multas.router, prefix="/multas", tags=["Multas"])
 router.include_router(manutencoes.router, prefix="/manutencoes", tags=["Manutenções"])
 router.include_router(reservas.router, prefix="/reservas", tags=["Reservas"])
 router.include_router(relatorios.router, prefix="/relatorios", tags=["Relatórios"])
+router.include_router(ipva.router, prefix="/ipva", tags=["IPVA"])

@@ -1,29 +1,50 @@
-from typing import List, Optional
-from datetime import datetime
-from decimal import Decimal
+from typing import Optional
+from datetime import datetime, date, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.auth import get_current_user, TokenData
-from app.models import Contrato, Veiculo
-from app.schemas.contrato import (
-    ContratoCreate,
-    ContratoUpdate,
-    ContratoFinalizarRequest,
-    ContratoResponse,
-    ContratoDetailedResponse
-)
-from app.schemas.common import PaginatedResponse, MessageResponse
+from app.models import Contrato, Veiculo, Cliente
+from app.schemas.contrato import ContratoCreate, ContratoUpdate, ContratoFinalizarRequest
 
 router = APIRouter()
 
 
-@router.get(
-    "/",
-    response_model=PaginatedResponse[ContratoResponse],
-    summary="Listar contratos"
-)
+def contrato_to_dict(c):
+    """Convert Contrato ORM to dict for JSON serialization."""
+    return {
+        "id": c.id,
+        "cliente_id": c.cliente_id,
+        "veiculo_id": c.veiculo_id,
+        "empresa_id": c.empresa_id,
+        "motorista_id": c.motorista_id,
+        "tipo_locacao": c.tipo_locacao,
+        "data_saida": c.data_saida.isoformat() if c.data_saida else None,
+        "hora_saida": c.hora_saida.isoformat() if c.hora_saida else None,
+        "data_entrada": c.data_entrada.isoformat() if c.data_entrada else None,
+        "hora_entrada": c.hora_entrada.isoformat() if c.hora_entrada else None,
+        "data_prevista_devolucao": c.data_prevista_devolucao.isoformat() if c.data_prevista_devolucao else None,
+        "km_saida": c.km_saida,
+        "km_entrada": c.km_entrada,
+        "km_livres_dia": c.km_livres_dia,
+        "km_percorridos": c.km_percorridos,
+        "quantidade_diarias": c.quantidade_diarias,
+        "valor_diaria": c.valor_diaria,
+        "valor_hora_extra": c.valor_hora_extra,
+        "valor_km_excedente": c.valor_km_excedente,
+        "subtotal": c.subtotal,
+        "avarias": c.avarias,
+        "desconto": c.desconto,
+        "total": c.total,
+        "despesas_extras": c.despesas_extras,
+        "status": c.status,
+        "observacoes": c.observacoes,
+        "data_cadastro": c.data_cadastro.isoformat() if c.data_cadastro else None,
+    }
+
+
+@router.get("/", summary="Listar contratos")
 async def list_contratos(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
@@ -32,262 +53,188 @@ async def list_contratos(
     veiculo_id: Optional[int] = Query(None),
     db: Session = Depends(get_db),
     current_user: TokenData = Depends(get_current_user)
-) -> PaginatedResponse[ContratoResponse]:
-    """
-    List all contratos with optional filters by status, cliente, and veiculo.
-
-    Args:
-        skip: Number of records to skip
-        limit: Number of records to return
-        status_filter: Filter by status (e.g., 'Ativo', 'Finalizado')
-        cliente_id: Filter by cliente ID
-        veiculo_id: Filter by veiculo ID
-        db: Database session
-        current_user: Current authenticated user
-
-    Returns:
-        PaginatedResponse with list of contratos
-    """
+):
+    """List all contratos with optional filters."""
     query = db.query(Contrato)
 
-    if status_filter:
+    if status_filter and status_filter != "Todos":
         query = query.filter(Contrato.status == status_filter)
-
     if cliente_id:
         query = query.filter(Contrato.cliente_id == cliente_id)
-
     if veiculo_id:
         query = query.filter(Contrato.veiculo_id == veiculo_id)
 
     total = query.count()
-    contratos = query.offset(skip).limit(limit).all()
+    contratos = query.order_by(Contrato.id.desc()).offset(skip).limit(limit).all()
 
-    return PaginatedResponse(
-        items=contratos,
-        total=total,
-        page=skip // limit + 1,
-        per_page=limit
-    )
+    return {
+        "items": [contrato_to_dict(c) for c in contratos],
+        "total": total,
+        "page": skip // limit + 1,
+        "per_page": limit,
+    }
 
 
-@router.get("/{contrato_id}", response_model=ContratoDetailedResponse, summary="Obter contrato por ID")
+@router.get("/{contrato_id}", summary="Obter contrato por ID")
 async def get_contrato(
     contrato_id: int,
     db: Session = Depends(get_db),
     current_user: TokenData = Depends(get_current_user)
-) -> ContratoDetailedResponse:
-    """
-    Get a specific contrato by ID with related data.
-
-    Args:
-        contrato_id: ID of the contrato to retrieve
-        db: Database session
-        current_user: Current authenticated user
-
-    Returns:
-        ContratoDetailedResponse with contrato and related data
-
-    Raises:
-        HTTPException: If contrato not found
-    """
+):
     contrato = db.query(Contrato).filter(Contrato.id == contrato_id).first()
-
     if not contrato:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Contrato não encontrado"
-        )
+        raise HTTPException(status_code=404, detail="Contrato não encontrado")
 
-    # Get related data
-    response_data = ContratoDetailedResponse(
-        **{k: v for k, v in contrato.__dict__.items() if not k.startswith('_')},
-        cliente_nome=contrato.cliente.nome if contrato.cliente else None,
-        veiculo_placa=contrato.veiculo.placa if contrato.veiculo else None,
-        veiculo_modelo=contrato.veiculo.modelo if contrato.veiculo else None
-    )
+    result = contrato_to_dict(contrato)
+    # Add related data
+    try:
+        if contrato.cliente:
+            result["cliente_nome"] = contrato.cliente.nome
+        if contrato.veiculo:
+            result["veiculo_placa"] = contrato.veiculo.placa
+            result["veiculo_modelo"] = contrato.veiculo.modelo
+    except Exception:
+        pass
 
-    return response_data
+    return result
 
 
-@router.post("/", response_model=ContratoResponse, summary="Criar novo contrato")
+@router.post("/", summary="Criar novo contrato")
 async def create_contrato(
     contrato_data: ContratoCreate,
     db: Session = Depends(get_db),
     current_user: TokenData = Depends(get_current_user)
-) -> ContratoResponse:
-    """
-    Create a new contrato and update vehicle status to 'Alugado'.
-
-    Args:
-        contrato_data: Data for the new contrato
-        db: Database session
-        current_user: Current authenticated user
-
-    Returns:
-        ContratoResponse with created contrato data
-
-    Raises:
-        HTTPException: If cliente or veiculo not found, or veiculo not available
-    """
-    # Check if veiculo exists
+):
     veiculo = db.query(Veiculo).filter(Veiculo.id == contrato_data.veiculo_id).first()
-
     if not veiculo:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Veículo não encontrado"
-        )
+        raise HTTPException(status_code=404, detail="Veículo não encontrado")
 
     if veiculo.status != "Disponível":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Veículo não está disponível. Status atual: {veiculo.status}"
-        )
+        raise HTTPException(status_code=400, detail=f"Veículo não disponível. Status: {veiculo.status}")
 
-    # Create contrato
-    novo_contrato = Contrato(**contrato_data.model_dump())
+    # Build data dict from schema, removing fields not in the model
+    data = contrato_data.model_dump()
+
+    # Remove valor_caucao - not a field on the Contrato model
+    data.pop("valor_caucao", None)
+
+    # data_entrada from frontend = planned return date → use as data_prevista_devolucao
+    if not data.get("data_prevista_devolucao") and data.get("data_entrada"):
+        data["data_prevista_devolucao"] = data["data_entrada"]
+    # If still no data_prevista_devolucao, default to data_saida + quantidade_diarias
+    if not data.get("data_prevista_devolucao"):
+        dias = data.get("quantidade_diarias", 1) or 1
+        data["data_prevista_devolucao"] = data["data_saida"] + timedelta(days=dias)
+
+    # Clear data_entrada for new contracts (it's set when finalized)
+    data["data_entrada"] = None
+
+    # Get km_saida from vehicle if not provided
+    if not data.get("km_saida") or data["km_saida"] == 0:
+        data["km_saida"] = float(veiculo.km_atual or 0)
+
+    # Auto-calculate subtotal and total if not provided
+    valor_diaria = float(data.get("valor_diaria", 0) or 0)
+    quantidade = int(data.get("quantidade_diarias", 1) or 1)
+    if not data.get("subtotal") or data["subtotal"] == 0:
+        data["subtotal"] = valor_diaria * quantidade
+    if not data.get("total") or data["total"] == 0:
+        subtotal = data["subtotal"]
+        avarias = float(data.get("avarias", 0) or 0)
+        desconto = float(data.get("desconto", 0) or 0)
+        despesas = float(data.get("despesas_extras", 0) or 0)
+        data["total"] = subtotal + avarias + despesas - desconto
+
+    novo_contrato = Contrato(**data)
     db.add(novo_contrato)
-
-    # Update vehicle status to 'Alugado'
     veiculo.status = "Alugado"
-
     db.commit()
     db.refresh(novo_contrato)
+    return contrato_to_dict(novo_contrato)
 
-    return novo_contrato
 
-
-@router.put("/{contrato_id}", response_model=ContratoResponse, summary="Atualizar contrato")
+@router.put("/{contrato_id}", summary="Atualizar contrato")
 async def update_contrato(
     contrato_id: int,
     contrato_data: ContratoUpdate,
     db: Session = Depends(get_db),
     current_user: TokenData = Depends(get_current_user)
-) -> ContratoResponse:
-    """
-    Update an existing contrato.
-
-    Args:
-        contrato_id: ID of the contrato to update
-        contrato_data: Data to update
-        db: Database session
-        current_user: Current authenticated user
-
-    Returns:
-        ContratoResponse with updated contrato data
-
-    Raises:
-        HTTPException: If contrato not found
-    """
+):
     contrato = db.query(Contrato).filter(Contrato.id == contrato_id).first()
-
     if not contrato:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Contrato não encontrado"
-        )
+        raise HTTPException(status_code=404, detail="Contrato não encontrado")
 
     update_data = contrato_data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
-        setattr(contrato, field, value)
+        if hasattr(contrato, field):
+            setattr(contrato, field, value)
 
     db.commit()
     db.refresh(contrato)
+    return contrato_to_dict(contrato)
 
-    return contrato
 
-
-@router.post("/{contrato_id}/finalizar", response_model=ContratoResponse, summary="Finalizar contrato")
+@router.post("/{contrato_id}/finalizar", summary="Finalizar contrato")
 async def finalize_contrato(
     contrato_id: int,
     finalize_data: ContratoFinalizarRequest,
     db: Session = Depends(get_db),
     current_user: TokenData = Depends(get_current_user)
-) -> ContratoResponse:
-    """
-    Finalize a contrato, calculate totals, and set vehicle back to 'Disponível'.
-
-    Args:
-        contrato_id: ID of the contrato to finalize
-        finalize_data: Finalization data (quilometragem_final, observacoes)
-        db: Database session
-        current_user: Current authenticated user
-
-    Returns:
-        ContratoResponse with finalized contrato data
-
-    Raises:
-        HTTPException: If contrato not found
-    """
+):
     contrato = db.query(Contrato).filter(Contrato.id == contrato_id).first()
-
     if not contrato:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Contrato não encontrado"
-        )
+        raise HTTPException(status_code=404, detail="Contrato não encontrado")
 
-    # Update contrato with final data
-    contrato.quilometragem_final = finalize_data.quilometragem_final
+    contrato.km_entrada = finalize_data.km_entrada
+    if finalize_data.data_entrada:
+        contrato.data_entrada = finalize_data.data_entrada
+    else:
+        contrato.data_entrada = date.today()
     if finalize_data.observacoes:
         contrato.observacoes = finalize_data.observacoes
     contrato.status = "Finalizado"
 
-    # Calculate total value
-    dias_aluguel = (contrato.data_fim - contrato.data_inicio).days
-    if dias_aluguel < 1:
-        dias_aluguel = 1
-    valor_total = contrato.valor_diaria * dias_aluguel
-    contrato.valor_total = valor_total
+    # Calculate km_percorridos
+    if contrato.km_saida and contrato.km_entrada:
+        contrato.km_percorridos = contrato.km_entrada - contrato.km_saida
 
-    # Set vehicle status back to 'Disponível'
+    # Set vehicle back to available
     veiculo = db.query(Veiculo).filter(Veiculo.id == contrato.veiculo_id).first()
     if veiculo:
         veiculo.status = "Disponível"
-        veiculo.quilometragem = finalize_data.quilometragem_final
+        veiculo.km_atual = finalize_data.km_entrada
 
     db.commit()
     db.refresh(contrato)
+    return contrato_to_dict(contrato)
 
-    return contrato
+
+@router.post("/{contrato_id}/finalize", summary="Finalizar contrato (alias)")
+async def finalize_contrato_alias(
+    contrato_id: int,
+    finalize_data: ContratoFinalizarRequest,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    return await finalize_contrato(contrato_id, finalize_data, db, current_user)
 
 
-@router.delete(
-    "/{contrato_id}",
-    response_model=MessageResponse,
-    summary="Deletar contrato"
-)
+@router.delete("/{contrato_id}", summary="Deletar contrato")
 async def delete_contrato(
     contrato_id: int,
     db: Session = Depends(get_db),
     current_user: TokenData = Depends(get_current_user)
-) -> MessageResponse:
-    """
-    Delete a contrato.
-
-    Args:
-        contrato_id: ID of the contrato to delete
-        db: Database session
-        current_user: Current authenticated user
-
-    Returns:
-        MessageResponse confirming deletion
-
-    Raises:
-        HTTPException: If contrato not found
-    """
+):
     contrato = db.query(Contrato).filter(Contrato.id == contrato_id).first()
-
     if not contrato:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Contrato não encontrado"
-        )
+        raise HTTPException(status_code=404, detail="Contrato não encontrado")
+
+    # If active, set vehicle back to available
+    if contrato.status == "Ativo":
+        veiculo = db.query(Veiculo).filter(Veiculo.id == contrato.veiculo_id).first()
+        if veiculo:
+            veiculo.status = "Disponível"
 
     db.delete(contrato)
     db.commit()
-
-    return MessageResponse(
-        message="Contrato deletado com sucesso",
-        success=True
-    )
+    return {"message": "Contrato deletado com sucesso", "success": True}

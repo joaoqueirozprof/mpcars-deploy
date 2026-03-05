@@ -5,49 +5,64 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.auth import get_current_user, TokenData
 from app.models import Empresa
-from app.schemas.common import PaginatedResponse, MessageResponse
+from app.schemas.empresa import EmpresaCreate, EmpresaUpdate
 
 router = APIRouter()
 
 
-@router.get(
-    "/",
-    summary="Listar empresas"
-)
+def empresa_to_dict(e):
+    """Convert Empresa ORM object to dict for JSON serialization."""
+    return {
+        "id": e.id,
+        "nome": e.nome,
+        "razao_social": e.razao_social,
+        "cnpj": e.cnpj,
+        "endereco": e.endereco,
+        "numero": e.numero,
+        "bairro": e.bairro,
+        "cidade": e.cidade,
+        "estado": e.estado,
+        "cep": e.cep,
+        "telefone": e.telefone,
+        "email": e.email,
+        "responsavel": e.responsavel,
+        "ativa": e.ativa,
+        "valor_km_extra_padrao": e.valor_km_extra_padrao,
+        "observacoes": e.observacoes,
+        "data_cadastro": e.data_cadastro.isoformat() if e.data_cadastro else None,
+    }
+
+
+@router.get("/", summary="Listar empresas")
 async def list_empresas(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     ativa: Optional[bool] = Query(None),
+    search: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: TokenData = Depends(get_current_user)
-) -> PaginatedResponse:
-    """
-    List all empresas with optional filter by active status.
-
-    Args:
-        skip: Number of records to skip
-        limit: Number of records to return
-        ativa: Filter by active status
-        db: Database session
-        current_user: Current authenticated user
-
-    Returns:
-        PaginatedResponse with list of empresas
-    """
+):
+    """List all empresas with optional filters."""
     query = db.query(Empresa)
 
     if ativa is not None:
         query = query.filter(Empresa.ativa == ativa)
 
+    if search:
+        query = query.filter(
+            (Empresa.nome.ilike(f"%{search}%")) |
+            (Empresa.cnpj.ilike(f"%{search}%"))
+        )
+
     total = query.count()
     empresas = query.offset(skip).limit(limit).all()
 
-    return PaginatedResponse(
-        items=empresas,
-        total=total,
-        page=skip // limit + 1,
-        per_page=limit
-    )
+    return {
+        "items": [empresa_to_dict(e) for e in empresas],
+        "total": total,
+        "page": skip // limit + 1,
+        "per_page": limit,
+    }
 
 
 @router.get("/{empresa_id}", summary="Obter empresa por ID")
@@ -56,208 +71,64 @@ async def get_empresa(
     db: Session = Depends(get_db),
     current_user: TokenData = Depends(get_current_user)
 ):
-    """
-    Get a specific empresa by ID.
-
-    Args:
-        empresa_id: ID of the empresa to retrieve
-        db: Database session
-        current_user: Current authenticated user
-
-    Returns:
-        Empresa data
-
-    Raises:
-        HTTPException: If empresa not found
-    """
     empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
-
     if not empresa:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Empresa não encontrada"
-        )
-
-    return empresa
+        raise HTTPException(status_code=404, detail="Empresa não encontrada")
+    return empresa_to_dict(empresa)
 
 
 @router.post("/", summary="Criar nova empresa")
 async def create_empresa(
-    empresa_data: dict,
+    empresa_data: EmpresaCreate,
     db: Session = Depends(get_db),
     current_user: TokenData = Depends(get_current_user)
 ):
-    """
-    Create a new empresa.
+    existing = db.query(Empresa).filter(Empresa.cnpj == empresa_data.cnpj).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="CNPJ já cadastrado")
 
-    Args:
-        empresa_data: Data for the new empresa
-        db: Database session
-        current_user: Current authenticated user
-
-    Returns:
-        Created empresa data
-
-    Raises:
-        HTTPException: If CNPJ already exists
-    """
-    # Check if CNPJ already exists
-    existing_cnpj = db.query(Empresa).filter(
-        Empresa.cnpj == empresa_data.get("cnpj")
-    ).first()
-
-    if existing_cnpj:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="CNPJ já cadastrado"
-        )
-
-    nova_empresa = Empresa(**empresa_data)
+    nova_empresa = Empresa(**empresa_data.model_dump())
     db.add(nova_empresa)
     db.commit()
     db.refresh(nova_empresa)
-
-    return nova_empresa
+    return empresa_to_dict(nova_empresa)
 
 
 @router.put("/{empresa_id}", summary="Atualizar empresa")
 async def update_empresa(
     empresa_id: int,
-    empresa_data: dict,
+    empresa_data: EmpresaUpdate,
     db: Session = Depends(get_db),
     current_user: TokenData = Depends(get_current_user)
 ):
-    """
-    Update an existing empresa.
-
-    Args:
-        empresa_id: ID of the empresa to update
-        empresa_data: Data to update
-        db: Database session
-        current_user: Current authenticated user
-
-    Returns:
-        Updated empresa data
-
-    Raises:
-        HTTPException: If empresa not found
-    """
     empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
-
     if not empresa:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Empresa não encontrada"
-        )
+        raise HTTPException(status_code=404, detail="Empresa não encontrada")
 
-    for field, value in empresa_data.items():
-        if hasattr(empresa, field):
-            setattr(empresa, field, value)
+    if empresa_data.cnpj and empresa_data.cnpj != empresa.cnpj:
+        existing = db.query(Empresa).filter(Empresa.cnpj == empresa_data.cnpj).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="CNPJ já cadastrado")
+
+    update_data = empresa_data.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(empresa, field, value)
 
     db.commit()
     db.refresh(empresa)
+    return empresa_to_dict(empresa)
 
-    return empresa
 
-
-@router.delete("/{empresa_id}", response_model=MessageResponse, summary="Deletar empresa")
+@router.delete("/{empresa_id}", summary="Deletar empresa")
 async def delete_empresa(
     empresa_id: int,
     db: Session = Depends(get_db),
     current_user: TokenData = Depends(get_current_user)
-) -> MessageResponse:
-    """
-    Delete an empresa.
-
-    Args:
-        empresa_id: ID of the empresa to delete
-        db: Database session
-        current_user: Current authenticated user
-
-    Returns:
-        MessageResponse confirming deletion
-
-    Raises:
-        HTTPException: If empresa not found
-    """
+):
     empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
-
     if not empresa:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Empresa não encontrada"
-        )
+        raise HTTPException(status_code=404, detail="Empresa não encontrada")
 
     db.delete(empresa)
     db.commit()
-
-    return MessageResponse(
-        message="Empresa deletada com sucesso",
-        success=True
-    )
-
-
-@router.get("/{empresa_id}/motoristas", summary="Listar motoristas da empresa")
-async def list_motoristas(
-    empresa_id: int,
-    db: Session = Depends(get_db),
-    current_user: TokenData = Depends(get_current_user)
-) -> List:
-    """
-    List all drivers (motoristas) for a specific empresa.
-
-    Args:
-        empresa_id: ID of the empresa
-        db: Database session
-        current_user: Current authenticated user
-
-    Returns:
-        List of motoristas
-
-    Raises:
-        HTTPException: If empresa not found
-    """
-    empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
-
-    if not empresa:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Empresa não encontrada"
-        )
-
-    # Return empty list for now - motoristas relationship would be defined in models
-    return []
-
-
-@router.post("/{empresa_id}/motoristas", summary="Adicionar motorista à empresa")
-async def add_motorista(
-    empresa_id: int,
-    motorista_data: dict,
-    db: Session = Depends(get_db),
-    current_user: TokenData = Depends(get_current_user)
-):
-    """
-    Add a new driver to an empresa.
-
-    Args:
-        empresa_id: ID of the empresa
-        motorista_data: Data for the new motorista
-        db: Database session
-        current_user: Current authenticated user
-
-    Returns:
-        Created motorista data
-
-    Raises:
-        HTTPException: If empresa not found
-    """
-    empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
-
-    if not empresa:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Empresa não encontrada"
-        )
-
-    # Placeholder for motorista creation logic
-    return {"message": "Motorista adicionado com sucesso"}
+    return {"message": "Empresa deletada com sucesso", "success": True}
