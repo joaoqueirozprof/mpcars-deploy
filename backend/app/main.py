@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
@@ -119,20 +120,26 @@ async def health_check() -> Dict[str, Any]:
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request, exc):
-    return {"error": exc.detail, "status_code": exc.status_code}
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"error": exc.detail, "status_code": exc.status_code},
+    )
 
 
 @app.exception_handler(ValueError)
 async def value_error_handler(request, exc):
-    raise HTTPException(status_code=400, detail=str(exc))
+    return JSONResponse(
+        status_code=400,
+        content={"error": str(exc), "status_code": 400},
+    )
 
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request, exc):
     logger.error(f"Unhandled exception: {str(exc)}")
-    raise HTTPException(
+    return JSONResponse(
         status_code=500,
-        detail="An internal server error occurred. Please try again later."
+        content={"error": "An internal server error occurred. Please try again later.", "status_code": 500},
     )
 
 
