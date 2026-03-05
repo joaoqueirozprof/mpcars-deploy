@@ -8,6 +8,8 @@ export default {
     extend: {
       colors: {
         primary: {
+          DEFAULT: '#2563eb',
+          dark: '#1d4ed8',
           50: '#eff6ff',
           100: '#dbeafe',
           200: '#bfdbfe',
@@ -20,6 +22,7 @@ export default {
           900: '#1e3a8a',
         },
         success: {
+          DEFAULT: '#16a34a',
           50: '#f0fdf4',
           100: '#dcfce7',
           200: '#bbf7d0',
@@ -32,6 +35,7 @@ export default {
           900: '#145231',
         },
         warning: {
+          DEFAULT: '#d97706',
           50: '#fffbeb',
           100: '#fef3c7',
           200: '#fde68a',
@@ -44,6 +48,7 @@ export default {
           900: '#78350f',
         },
         danger: {
+          DEFAULT: '#dc2626',
           50: '#fef2f2',
           100: '#fee2e2',
           200: '#fecaca',

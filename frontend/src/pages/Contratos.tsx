@@ -180,22 +180,16 @@ const Contratos: React.FC = () => {
   }
 
   const statusConfig: Record<string, { label: string; color: string; bgColor: string }> = {
-    Ativo: {
-      label: 'Ativo',
-      color: 'text-success',
-      bgColor: 'bg-green-100',
-    },
-    Finalizado: {
-      label: 'Finalizado',
-      color: 'text-gray-600',
-      bgColor: 'bg-gray-100',
-    },
-    Cancelado: {
-      label: 'Cancelado',
-      color: 'text-danger',
-      bgColor: 'bg-red-100',
-    },
+    Ativo: { label: 'Ativo', color: 'text-success', bgColor: 'bg-green-100' },
+    ativo: { label: 'Ativo', color: 'text-success', bgColor: 'bg-green-100' },
+    Finalizado: { label: 'Finalizado', color: 'text-gray-600', bgColor: 'bg-gray-100' },
+    finalizado: { label: 'Finalizado', color: 'text-gray-600', bgColor: 'bg-gray-100' },
+    Cancelado: { label: 'Cancelado', color: 'text-danger', bgColor: 'bg-red-100' },
+    cancelado: { label: 'Cancelado', color: 'text-danger', bgColor: 'bg-red-100' },
+    Pendente: { label: 'Pendente', color: 'text-warning', bgColor: 'bg-yellow-100' },
+    pendente: { label: 'Pendente', color: 'text-warning', bgColor: 'bg-yellow-100' },
   }
+  const defaultStatus = { label: 'N/A', color: 'text-gray-600', bgColor: 'bg-gray-100' }
 
   return (
     <div className="p-6 space-y-6">
@@ -261,7 +255,7 @@ const Contratos: React.FC = () => {
               </tr>
             ) : (
               contratos.map((contrato: any) => {
-                const status = statusConfig[contrato.status]
+                const status = statusConfig[contrato.status] || defaultStatus
                 return (
                   <tr key={contrato.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 text-sm font-bold text-primary">{contrato.id}</td>
@@ -272,10 +266,10 @@ const Contratos: React.FC = () => {
                       {veiculos.find((v: any) => v.id === contrato.veiculo_id)?.placa || 'N/A'}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-700">
-                      {format(new Date(contrato.data_saida), 'dd/MM/yyyy', { locale: ptBR })}
+                      {contrato.data_saida ? format(new Date(contrato.data_saida), 'dd/MM/yyyy', { locale: ptBR }) : '-'}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-700">
-                      {format(new Date(contrato.data_entrada), 'dd/MM/yyyy', { locale: ptBR })}
+                      {contrato.data_entrada ? format(new Date(contrato.data_entrada), 'dd/MM/yyyy', { locale: ptBR }) : '-'}
                     </td>
                     <td className="px-6 py-4 text-sm font-semibold text-gray-900">
                       R$ {contrato.valor_diaria?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}

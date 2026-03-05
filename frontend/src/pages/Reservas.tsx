@@ -94,9 +94,15 @@ const Reservas: React.FC = () => {
 
   const statusConfig: Record<string, { label: string; color: string; bgColor: string }> = {
     confirmada: { label: 'Confirmada', color: 'text-success', bgColor: 'bg-green-100' },
+    Confirmada: { label: 'Confirmada', color: 'text-success', bgColor: 'bg-green-100' },
     cancelada: { label: 'Cancelada', color: 'text-danger', bgColor: 'bg-red-100' },
+    Cancelada: { label: 'Cancelada', color: 'text-danger', bgColor: 'bg-red-100' },
     concluida: { label: 'Concluída', color: 'text-gray-600', bgColor: 'bg-gray-100' },
+    'Concluída': { label: 'Concluída', color: 'text-gray-600', bgColor: 'bg-gray-100' },
+    pendente: { label: 'Pendente', color: 'text-warning', bgColor: 'bg-yellow-100' },
+    Pendente: { label: 'Pendente', color: 'text-warning', bgColor: 'bg-yellow-100' },
   }
+  const defaultStatus = { label: 'Desconhecido', color: 'text-gray-600', bgColor: 'bg-gray-100' }
 
   const resetForm = () => {
     setFormData({
@@ -187,7 +193,7 @@ const Reservas: React.FC = () => {
               </tr>
             ) : (
               reservas.map((reserva) => {
-                const status = statusConfig[reserva.status]
+                const status = statusConfig[reserva.status] || defaultStatus
                 return (
                   <tr key={reserva.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">{reserva.cliente_id}</td>

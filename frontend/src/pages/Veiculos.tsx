@@ -97,22 +97,15 @@ const Veiculos: React.FC = () => {
   const veiculos: Veiculo[] = veiculosData?.items || []
 
   const statusConfig: Record<string, { label: string; color: string; bgColor: string }> = {
-    'Disponível': {
-      label: 'Disponível',
-      color: 'text-success',
-      bgColor: 'bg-green-100',
-    },
-    'Alugado': {
-      label: 'Alugado',
-      color: 'text-primary',
-      bgColor: 'bg-blue-100',
-    },
-    'Manutenção': {
-      label: 'Manutenção',
-      color: 'text-warning',
-      bgColor: 'bg-yellow-100',
-    },
+    'Disponível': { label: 'Disponível', color: 'text-success', bgColor: 'bg-green-100' },
+    disponivel: { label: 'Disponível', color: 'text-success', bgColor: 'bg-green-100' },
+    'Alugado': { label: 'Alugado', color: 'text-primary', bgColor: 'bg-blue-100' },
+    alugado: { label: 'Alugado', color: 'text-primary', bgColor: 'bg-blue-100' },
+    'Manutenção': { label: 'Manutenção', color: 'text-warning', bgColor: 'bg-yellow-100' },
+    manutencao: { label: 'Manutenção', color: 'text-warning', bgColor: 'bg-yellow-100' },
+    'Reservado': { label: 'Reservado', color: 'text-blue-600', bgColor: 'bg-blue-100' },
   }
+  const defaultStatus = { label: 'N/A', color: 'text-gray-600', bgColor: 'bg-gray-100' }
 
   const filterTabs: { value: StatusFilter; label: string }[] = [
     { value: 'todos', label: 'Todos' },
@@ -232,7 +225,7 @@ const Veiculos: React.FC = () => {
           </div>
         ) : (
           veiculos.map((veiculo) => {
-            const status = statusConfig[veiculo.status]
+            const status = statusConfig[veiculo.status] || defaultStatus
             return (
               <div
                 key={veiculo.id}
