@@ -182,6 +182,23 @@ export const relatoriosAPI = {
   update: (id: string, data: Record<string, any>) =>
     api.put(`/relatorios/${id}`, data),
   delete: (id: string) => api.delete(`/relatorios/${id}`),
+  financeiro: (params?: Record<string, any>) =>
+    api.get('/relatorios/financeiro', { params }),
+  frota: () => api.get('/relatorios/frota'),
+  clientes: () => api.get('/relatorios/clientes'),
+  contratos: () => api.get('/relatorios/contratos'),
+}
+
+// Alertas API calls
+export const alertasAPI = {
+  list: (params?: Record<string, any>) =>
+    api.get('/alertas/', { params }),
+  get: (id: string) => api.get(`/alertas/${id}`),
+  create: (data: Record<string, any>) =>
+    api.post('/alertas/', data),
+  gerar: () => api.get('/alertas/gerar/alertas'),
+  resolver: (id: string, data: Record<string, any>) =>
+    api.put(`/alertas/${id}/resolver`, data),
 }
 
 export default api

@@ -11,6 +11,7 @@ import {
   AlertTriangle,
   Info,
   Clock,
+  Loader2,
 } from 'lucide-react'
 import {
   LineChart,
@@ -67,6 +68,8 @@ interface DashboardStats {
 }
 
 const Dashboard: React.FC = () => {
+  const [isExporting, setIsExporting] = useState(false)
+
   const {
     data: statsData,
     isLoading,
@@ -126,7 +129,77 @@ const Dashboard: React.FC = () => {
   })
 
   const formatCurrency = (value: number) => {
-    return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+    return `R$ ${(value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+  }
+
+  const handleExportReport = () => {
+    if (!statsData) return
+    setIsExporting(true)
+    try {
+      const now = new Date()
+      const dateStr = now.toLocaleDateString('pt-BR') + ' às ' + now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      const html = `<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><title>MPCARS - Dashboard</title>
+<style>
+  body { font-family: 'Segoe UI', Arial, sans-serif; margin: 40px; color: #333; }
+  .header-bar { background: #2563eb; color: white; padding: 20px 30px; border-radius: 8px; margin-bottom: 30px; }
+  .header-bar h1 { margin: 0; font-size: 28px; }
+  .header-bar p { margin: 5px 0 0; opacity: 0.9; font-size: 14px; }
+  h2 { color: #1e40af; border-bottom: 2px solid #2563eb; padding-bottom: 8px; margin-top: 30px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+  td { padding: 12px 16px; border-bottom: 1px solid #e5e7eb; }
+  tr:hover { background: #f9fafb; }
+  .section td { background: #2563eb; color: white; font-weight: 600; font-size: 14px; text-transform: uppercase; }
+  .value { text-align: right; font-weight: 600; }
+  .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 12px; text-align: center; }
+  @media print { body { margin: 20px; } .no-print { display: none; } }
+</style></head><body>
+  <div class="header-bar"><h1>MPCARS - Resumo do Dashboard</h1><p>Relatório exportado em ${dateStr}</p></div>
+  <h2>Resumo Geral</h2>
+  <table>
+    <tr><td>Total de Veículos</td><td class="value">${statsData.total_veiculos || 0}</td></tr>
+    <tr><td>Veículos Alugados</td><td class="value">${statsData.veiculos_alugados || 0}</td></tr>
+    <tr><td>Veículos Disponíveis</td><td class="value">${statsData.veiculos_disponiveis || 0}</td></tr>
+    <tr><td>Veículos em Manutenção</td><td class="value">${statsData.veiculos_manutencao || 0}</td></tr>
+    <tr><td>Contratos Ativos</td><td class="value">${statsData.contratos_ativos || 0}</td></tr>
+    <tr><td>Total de Clientes</td><td class="value">${statsData.total_clientes || 0}</td></tr>
+    <tr><td>Taxa de Ocupação</td><td class="value">${((statsData.taxa_ocupacao || 0) * 100).toFixed(1)}%</td></tr>
+  </table>
+  <h2>Financeiro do Mês</h2>
+  <table>
+    <tr><td>Receita do Mês</td><td class="value">${formatCurrency(statsData.receita_mes || 0)}</td></tr>
+    <tr><td>Despesas do Mês</td><td class="value">${formatCurrency(statsData.despesas_mes || 0)}</td></tr>
+    <tr><td>Lucro Líquido</td><td class="value">${formatCurrency(statsData.lucro_mes || 0)}</td></tr>
+    <tr><td>Previsão de Receita (30 dias)</td><td class="value">${formatCurrency(statsData.previsao_receita || 0)}</td></tr>
+  </table>
+  <h2>Alertas Ativos</h2>
+  <table>
+    <tr><td>Críticos</td><td class="value">${statsData.alertas_ativos?.critico || 0}</td></tr>
+    <tr><td>Atenção</td><td class="value">${statsData.alertas_ativos?.atencao || 0}</td></tr>
+    <tr><td>Informação</td><td class="value">${statsData.alertas_ativos?.info || 0}</td></tr>
+  </table>
+  ${statsData.contratos_atrasados && statsData.contratos_atrasados.length > 0 ? `
+  <h2>Contratos Atrasados</h2>
+  <table>
+    <tr class="section"><td>Cliente</td><td>Veículo</td><td>Dias Atraso</td></tr>
+    ${statsData.contratos_atrasados.map((c: any) => `<tr><td>${c.cliente || 'N/A'}</td><td>${c.veiculo || 'N/A'}</td><td class="value">${c.dias_atraso || 0}d</td></tr>`).join('')}
+  </table>` : ''}
+  <div class="footer"><p>Relatório gerado em ${dateStr} | MPCARS - Sistema de Gestão</p></div>
+  <div class="no-print" style="margin-top:20px;text-align:center;">
+    <button onclick="window.print()" style="padding:10px 30px;background:#2563eb;color:white;border:none;border-radius:6px;cursor:pointer;font-size:16px;">Imprimir / Salvar como PDF</button>
+  </div>
+</body></html>`
+      const win = window.open('', '_blank')
+      if (win) {
+        win.document.write(html)
+        win.document.close()
+      }
+    } catch (err) {
+      console.error('Export error:', err)
+      alert('Erro ao exportar relatório.')
+    } finally {
+      setIsExporting(false)
+    }
   }
 
   // Top 4 metric cards
@@ -197,9 +270,22 @@ const Dashboard: React.FC = () => {
           <h1 className="text-4xl font-bold text-gray-900">Dashboard</h1>
           <p className="text-gray-600 mt-2">Bem-vindo ao sistema MPCARS</p>
         </div>
-        <button className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2">
-          <TrendingUp size={20} />
-          Exportar Relatório
+        <button
+          onClick={handleExportReport}
+          disabled={isExporting || !statsData}
+          className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
+        >
+          {isExporting ? (
+            <>
+              <Loader2 size={20} className="animate-spin" />
+              Exportando...
+            </>
+          ) : (
+            <>
+              <TrendingUp size={20} />
+              Exportar Relatório
+            </>
+          )}
         </button>
       </div>
 
