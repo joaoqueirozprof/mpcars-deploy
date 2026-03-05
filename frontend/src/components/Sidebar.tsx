@@ -56,6 +56,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         { path: '/veiculos', label: 'Veículos', icon: <Car size={20} /> },
         { path: '/clientes', label: 'Clientes', icon: <Users size={20} /> },
         { path: '/contratos', label: 'Contratos', icon: <FileText size={20} /> },
+        { path: '/reservas', label: 'Reservas', icon: <BookOpen size={20} /> },
       ],
     },
     {
@@ -63,6 +64,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       items: [
         { path: '/empresas', label: 'Empresas', icon: <Building2 size={20} /> },
         { path: '/financeiro', label: 'Financeiro', icon: <DollarSign size={20} /> },
+        { path: '/relatorios', label: 'Relatórios', icon: <BarChart3 size={20} /> },
       ],
     },
     {
@@ -77,8 +79,6 @@ const Sidebar: React.FC<SidebarProps> = ({
     {
       title: 'Outros',
       items: [
-        { path: '/reservas', label: 'Reservas', icon: <BookOpen size={20} /> },
-        { path: '/relatorios', label: 'Relatórios', icon: <BarChart3 size={20} /> },
         { path: '/configuracoes', label: 'Configurações', icon: <Settings size={20} /> },
       ],
     },

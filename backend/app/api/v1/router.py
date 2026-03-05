@@ -4,6 +4,9 @@ from fastapi import APIRouter
 from app.api.v1 import auth, clientes, veiculos, contratos, empresas
 from app.api.v1 import dashboard, financeiro, configuracoes
 from app.api.v1 import seguros, multas, manutencoes, reservas, relatorios, ipva
+from app.api.v1 import despesas_contrato, prorrogacoes, quilometragem, motoristas_empresa, checkin_checkout
+from app.api.v1 import parcelas_seguro, ipva_aliquotas, documentos, alertas, audit_log
+from app.api.v1 import uso_veiculo_empresa, despesas_veiculos, despesas_loja
 
 # Create the main router with all subrouters
 router = APIRouter()
@@ -23,3 +26,16 @@ router.include_router(manutencoes.router, prefix="/manutencoes", tags=["Manuten�
 router.include_router(reservas.router, prefix="/reservas", tags=["Reservas"])
 router.include_router(relatorios.router, prefix="/relatorios", tags=["Relatórios"])
 router.include_router(ipva.router, prefix="/ipva", tags=["IPVA"])
+router.include_router(despesas_contrato.router, prefix="/despesas-contrato", tags=["Despesas de Contrato"])
+router.include_router(prorrogacoes.router, prefix="/prorrogacoes", tags=["Prorrogações"])
+router.include_router(quilometragem.router, prefix="/quilometragem", tags=["Quilometragem"])
+router.include_router(motoristas_empresa.router, prefix="/motoristas-empresa", tags=["Motoristas de Empresa"])
+router.include_router(checkin_checkout.router, prefix="/checkin-checkout", tags=["Check-in/Check-out"])
+router.include_router(parcelas_seguro.router, prefix="/parcelas-seguro", tags=["Parcelas de Seguro"])
+router.include_router(ipva_aliquotas.router, prefix="/ipva-aliquotas", tags=["Alíquotas IPVA"])
+router.include_router(documentos.router, prefix="/documentos", tags=["Documentos"])
+router.include_router(alertas.router, prefix="/alertas", tags=["Alertas"])
+router.include_router(audit_log.router, prefix="/audit-log", tags=["Auditoria"])
+router.include_router(uso_veiculo_empresa.router, prefix="/uso-veiculo-empresa", tags=["Uso de Veículo por Empresa"])
+router.include_router(despesas_veiculos.router, prefix="/despesas-veiculo", tags=["Despesas de Veículos"])
+router.include_router(despesas_loja.router, prefix="/despesas-loja-dedicadas", tags=["Despesas de Loja"])
