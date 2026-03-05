@@ -67,7 +67,7 @@ class Cliente(Base):
 
     # Relationships
     empresa = relationship("Empresa", back_populates="clientes")
-    contratos = relationship("Contrato", back_populates="cliente")
+    contratos = relationship("Contrato", back_populates="cliente", foreign_keys="[Contrato.cliente_id]")
 
     def __repr__(self) -> str:
         return f"<Cliente(id={self.id}, nome={self.nome}, cpf_cnpj={self.cpf_cnpj})>"
