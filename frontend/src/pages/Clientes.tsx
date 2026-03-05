@@ -86,7 +86,7 @@ const Clientes: React.FC = () => {
     },
   })
 
-  const clientes: Cliente[] = clientesResponse || []
+  const clientes: Cliente[] = clientesResponse?.items || []
 
   const resetForm = () => {
     setFormData({

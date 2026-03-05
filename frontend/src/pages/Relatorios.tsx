@@ -23,16 +23,18 @@ const Relatorios: React.FC = () => {
 
   const { data: relatoriosData, isLoading } = useQuery({
     queryKey: ['relatorios', tipoFilter, dataInicio, dataFim],
-    queryFn: () =>
-      relatoriosAPI.list({
+    queryFn: async () => {
+      const response = await relatoriosAPI.list({
         tipo: tipoFilter === 'todos' ? undefined : tipoFilter,
         data_inicio: dataInicio,
         data_fim: dataFim,
-      }),
+      })
+      return response.data
+    },
     staleTime: 5 * 60 * 1000,
   })
 
-  const relatorios: Relatorio[] = relatoriosData?.data || []
+  const relatorios: Relatorio[] = relatoriosData?.items || []
 
   const tiposConfig = {
     receitas: { label: 'Receitas', color: 'text-success' },

@@ -43,13 +43,19 @@ const Multas: React.FC = () => {
 
   const { data: multasData, isLoading } = useQuery({
     queryKey: ['multas'],
-    queryFn: () => multasAPI.list(),
+    queryFn: async () => {
+      const response = await multasAPI.list()
+      return response.data
+    },
     staleTime: 5 * 60 * 1000,
   })
 
   const { data: veiculosData } = useQuery({
     queryKey: ['veiculos'],
-    queryFn: () => veiculosAPI.list(),
+    queryFn: async () => {
+      const response = await veiculosAPI.list()
+      return response.data
+    },
     staleTime: 5 * 60 * 1000,
   })
 
@@ -79,8 +85,8 @@ const Multas: React.FC = () => {
     },
   })
 
-  const multas: Multa[] = multasData?.data || []
-  const veiculos = veiculosData?.data || []
+  const multas: Multa[] = multasData?.items || []
+  const veiculos = veiculosData?.items || []
 
   const statusConfig: Record<string, { label: string; color: string; bgColor: string }> = {
     pago: { label: 'Pago', color: 'text-success', bgColor: 'bg-green-100' },

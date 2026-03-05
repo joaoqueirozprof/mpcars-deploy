@@ -59,10 +59,12 @@ const Veiculos: React.FC = () => {
 
   const { data: veiculosData, isLoading } = useQuery({
     queryKey: ['veiculos', statusFilter],
-    queryFn: () =>
-      veiculosAPI.list({
+    queryFn: async () => {
+      const response = await veiculosAPI.list({
         status: statusFilterMap[statusFilter],
-      }),
+      })
+      return response.data
+    },
     staleTime: 5 * 60 * 1000,
   })
 
@@ -92,7 +94,7 @@ const Veiculos: React.FC = () => {
     },
   })
 
-  const veiculos: Veiculo[] = veiculosData?.data || []
+  const veiculos: Veiculo[] = veiculosData?.items || []
 
   const statusConfig: Record<string, { label: string; color: string; bgColor: string }> = {
     'Disponível': {

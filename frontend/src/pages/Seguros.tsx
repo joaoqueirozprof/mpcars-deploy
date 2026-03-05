@@ -43,13 +43,19 @@ const Seguros: React.FC = () => {
 
   const { data: segurosData, isLoading } = useQuery({
     queryKey: ['seguros'],
-    queryFn: () => segurosAPI.list(),
+    queryFn: async () => {
+      const response = await segurosAPI.list()
+      return response.data
+    },
     staleTime: 5 * 60 * 1000,
   })
 
   const { data: veiculosData } = useQuery({
     queryKey: ['veiculos'],
-    queryFn: () => veiculosAPI.list(),
+    queryFn: async () => {
+      const response = await veiculosAPI.list()
+      return response.data
+    },
     staleTime: 5 * 60 * 1000,
   })
 
@@ -79,8 +85,8 @@ const Seguros: React.FC = () => {
     },
   })
 
-  const seguros: Seguro[] = segurosData?.data || []
-  const veiculos = veiculosData?.data || []
+  const seguros: Seguro[] = segurosData?.items || []
+  const veiculos = veiculosData?.items || []
 
   const statusConfig: Record<string, { label: string; color: string; bgColor: string }> = {
     ativo: { label: 'Ativo', color: 'text-success', bgColor: 'bg-green-100' },

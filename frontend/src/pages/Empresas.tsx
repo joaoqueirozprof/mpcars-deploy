@@ -93,7 +93,7 @@ const Empresas: React.FC = () => {
     },
   })
 
-  const empresas: Empresa[] = empresasResponse || []
+  const empresas: Empresa[] = empresasResponse?.items || []
 
   const resetForm = () => {
     setFormData({

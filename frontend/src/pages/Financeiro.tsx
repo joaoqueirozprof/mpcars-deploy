@@ -88,7 +88,7 @@ const Financeiro: React.FC = () => {
     },
   })
 
-  const lancamentos: Financeiro[] = financeiroResponse || []
+  const lancamentos: Financeiro[] = financeiroResponse?.items || []
 
   const resetForm = () => {
     setFormData({

@@ -45,10 +45,10 @@ export const authAPI = {
 // Clientes API calls
 export const clientesAPI = {
   list: (params?: Record<string, any>) =>
-    api.get('/clientes', { params }),
+    api.get('/clientes/', { params }),
   get: (id: string) => api.get(`/clientes/${id}`),
   create: (data: Record<string, any>) =>
-    api.post('/clientes', data),
+    api.post('/clientes/', data),
   update: (id: string, data: Record<string, any>) =>
     api.put(`/clientes/${id}`, data),
   delete: (id: string) => api.delete(`/clientes/${id}`),
@@ -57,10 +57,10 @@ export const clientesAPI = {
 // Veículos API calls
 export const veiculosAPI = {
   list: (params?: Record<string, any>) =>
-    api.get('/veiculos', { params }),
+    api.get('/veiculos/', { params }),
   get: (id: string) => api.get(`/veiculos/${id}`),
   create: (data: Record<string, any>) =>
-    api.post('/veiculos', data),
+    api.post('/veiculos/', data),
   update: (id: string, data: Record<string, any>) =>
     api.put(`/veiculos/${id}`, data),
   delete: (id: string) => api.delete(`/veiculos/${id}`),
@@ -69,10 +69,10 @@ export const veiculosAPI = {
 // Contratos API calls
 export const contratosAPI = {
   list: (params?: Record<string, any>) =>
-    api.get('/contratos', { params }),
+    api.get('/contratos/', { params }),
   get: (id: string) => api.get(`/contratos/${id}`),
   create: (data: Record<string, any>) =>
-    api.post('/contratos', data),
+    api.post('/contratos/', data),
   update: (id: string, data: Record<string, any>) =>
     api.put(`/contratos/${id}`, data),
   delete: (id: string) => api.delete(`/contratos/${id}`),
@@ -83,10 +83,10 @@ export const contratosAPI = {
 // Empresas API calls
 export const empresasAPI = {
   list: (params?: Record<string, any>) =>
-    api.get('/empresas', { params }),
+    api.get('/empresas/', { params }),
   get: (id: string) => api.get(`/empresas/${id}`),
   create: (data: Record<string, any>) =>
-    api.post('/empresas', data),
+    api.post('/empresas/', data),
   update: (id: string, data: Record<string, any>) =>
     api.put(`/empresas/${id}`, data),
   delete: (id: string) => api.delete(`/empresas/${id}`),
@@ -103,10 +103,10 @@ export const dashboardAPI = {
 // Financeiro API calls
 export const financeiroAPI = {
   list: (params?: Record<string, any>) =>
-    api.get('/financeiro', { params }),
+    api.get('/financeiro/', { params }),
   get: (id: string) => api.get(`/financeiro/${id}`),
   create: (data: Record<string, any>) =>
-    api.post('/financeiro', data),
+    api.post('/financeiro/', data),
   update: (id: string, data: Record<string, any>) =>
     api.put(`/financeiro/${id}`, data),
   delete: (id: string) => api.delete(`/financeiro/${id}`),
@@ -115,10 +115,10 @@ export const financeiroAPI = {
 // Seguros API calls
 export const segurosAPI = {
   list: (params?: Record<string, any>) =>
-    api.get('/seguros', { params }),
+    api.get('/seguros/', { params }),
   get: (id: string) => api.get(`/seguros/${id}`),
   create: (data: Record<string, any>) =>
-    api.post('/seguros', data),
+    api.post('/seguros/', data),
   update: (id: string, data: Record<string, any>) =>
     api.put(`/seguros/${id}`, data),
   delete: (id: string) => api.delete(`/seguros/${id}`),
@@ -127,10 +127,10 @@ export const segurosAPI = {
 // IPVA API calls
 export const ipvaAPI = {
   list: (params?: Record<string, any>) =>
-    api.get('/ipva', { params }),
+    api.get('/ipva/', { params }),
   get: (id: string) => api.get(`/ipva/${id}`),
   create: (data: Record<string, any>) =>
-    api.post('/ipva', data),
+    api.post('/ipva/', data),
   update: (id: string, data: Record<string, any>) =>
     api.put(`/ipva/${id}`, data),
   delete: (id: string) => api.delete(`/ipva/${id}`),
@@ -139,10 +139,10 @@ export const ipvaAPI = {
 // Multas API calls
 export const multasAPI = {
   list: (params?: Record<string, any>) =>
-    api.get('/multas', { params }),
+    api.get('/multas/', { params }),
   get: (id: string) => api.get(`/multas/${id}`),
   create: (data: Record<string, any>) =>
-    api.post('/multas', data),
+    api.post('/multas/', data),
   update: (id: string, data: Record<string, any>) =>
     api.put(`/multas/${id}`, data),
   delete: (id: string) => api.delete(`/multas/${id}`),
@@ -151,10 +151,10 @@ export const multasAPI = {
 // Manutenções API calls
 export const manutencoesAPI = {
   list: (params?: Record<string, any>) =>
-    api.get('/manutencoes', { params }),
+    api.get('/manutencoes/', { params }),
   get: (id: string) => api.get(`/manutencoes/${id}`),
   create: (data: Record<string, any>) =>
-    api.post('/manutencoes', data),
+    api.post('/manutencoes/', data),
   update: (id: string, data: Record<string, any>) =>
     api.put(`/manutencoes/${id}`, data),
   delete: (id: string) => api.delete(`/manutencoes/${id}`),
@@ -163,10 +163,10 @@ export const manutencoesAPI = {
 // Reservas API calls
 export const reservasAPI = {
   list: (params?: Record<string, any>) =>
-    api.get('/reservas', { params }),
+    api.get('/reservas/', { params }),
   get: (id: string) => api.get(`/reservas/${id}`),
   create: (data: Record<string, any>) =>
-    api.post('/reservas', data),
+    api.post('/reservas/', data),
   update: (id: string, data: Record<string, any>) =>
     api.put(`/reservas/${id}`, data),
   delete: (id: string) => api.delete(`/reservas/${id}`),
@@ -175,10 +175,10 @@ export const reservasAPI = {
 // Relatórios API calls
 export const relatoriosAPI = {
   list: (params?: Record<string, any>) =>
-    api.get('/relatorios', { params }),
+    api.get('/relatorios/', { params }),
   get: (id: string) => api.get(`/relatorios/${id}`),
   create: (data: Record<string, any>) =>
-    api.post('/relatorios', data),
+    api.post('/relatorios/', data),
   update: (id: string, data: Record<string, any>) =>
     api.put(`/relatorios/${id}`, data),
   delete: (id: string) => api.delete(`/relatorios/${id}`),

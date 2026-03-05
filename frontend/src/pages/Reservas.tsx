@@ -37,19 +37,28 @@ const Reservas: React.FC = () => {
 
   const { data: reservasData, isLoading } = useQuery({
     queryKey: ['reservas'],
-    queryFn: () => reservasAPI.list(),
+    queryFn: async () => {
+      const response = await reservasAPI.list()
+      return response.data
+    },
     staleTime: 5 * 60 * 1000,
   })
 
   const { data: clientesData } = useQuery({
     queryKey: ['clientes'],
-    queryFn: () => clientesAPI.list(),
+    queryFn: async () => {
+      const response = await clientesAPI.list()
+      return response.data
+    },
     staleTime: 5 * 60 * 1000,
   })
 
   const { data: veiculosData } = useQuery({
     queryKey: ['veiculos'],
-    queryFn: () => veiculosAPI.list(),
+    queryFn: async () => {
+      const response = await veiculosAPI.list()
+      return response.data
+    },
     staleTime: 5 * 60 * 1000,
   })
 
@@ -79,9 +88,9 @@ const Reservas: React.FC = () => {
     },
   })
 
-  const reservas: Reserva[] = reservasData?.data || []
-  const clientes = clientesData?.data || []
-  const veiculos = veiculosData?.data || []
+  const reservas: Reserva[] = reservasData?.items || []
+  const clientes = clientesData?.items || []
+  const veiculos = veiculosData?.items || []
 
   const statusConfig: Record<string, { label: string; color: string; bgColor: string }> = {
     confirmada: { label: 'Confirmada', color: 'text-success', bgColor: 'bg-green-100' },

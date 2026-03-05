@@ -114,9 +114,9 @@ const Contratos: React.FC = () => {
     },
   })
 
-  const contratos: Contrato[] = contratosResponse || []
-  const clientes: any[] = clientesResponse || []
-  const veiculos: any[] = veiculosResponse || []
+  const contratos: Contrato[] = contratosResponse?.items || []
+  const clientes: any[] = clientesResponse?.items || []
+  const veiculos: any[] = veiculosResponse?.items || []
 
   const resetForm = () => {
     setFormData({

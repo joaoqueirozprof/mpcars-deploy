@@ -37,13 +37,19 @@ const IPVA: React.FC = () => {
 
   const { data: ipvaData, isLoading } = useQuery({
     queryKey: ['ipva'],
-    queryFn: () => ipvaAPI.list(),
+    queryFn: async () => {
+      const response = await ipvaAPI.list()
+      return response.data
+    },
     staleTime: 5 * 60 * 1000,
   })
 
   const { data: veiculosData } = useQuery({
     queryKey: ['veiculos'],
-    queryFn: () => veiculosAPI.list(),
+    queryFn: async () => {
+      const response = await veiculosAPI.list()
+      return response.data
+    },
     staleTime: 5 * 60 * 1000,
   })
 
@@ -73,8 +79,8 @@ const IPVA: React.FC = () => {
     },
   })
 
-  const ipvas: IPVA[] = ipvaData?.data || []
-  const veiculos = veiculosData?.data || []
+  const ipvas: IPVA[] = ipvaData?.items || []
+  const veiculos = veiculosData?.items || []
 
   const statusConfig: Record<string, { label: string; color: string; bgColor: string }> = {
     pago: { label: 'Pago', color: 'text-success', bgColor: 'bg-green-100' },

@@ -43,13 +43,19 @@ const Manutencoes: React.FC = () => {
 
   const { data: manutencoeData, isLoading } = useQuery({
     queryKey: ['manutencoes'],
-    queryFn: () => manutencoesAPI.list(),
+    queryFn: async () => {
+      const response = await manutencoesAPI.list()
+      return response.data
+    },
     staleTime: 5 * 60 * 1000,
   })
 
   const { data: veiculosData } = useQuery({
     queryKey: ['veiculos'],
-    queryFn: () => veiculosAPI.list(),
+    queryFn: async () => {
+      const response = await veiculosAPI.list()
+      return response.data
+    },
     staleTime: 5 * 60 * 1000,
   })
 
@@ -79,8 +85,8 @@ const Manutencoes: React.FC = () => {
     },
   })
 
-  const manutencoes: Manutencao[] = manutencoeData?.data || []
-  const veiculos = veiculosData?.data || []
+  const manutencoes: Manutencao[] = manutencoeData?.items || []
+  const veiculos = veiculosData?.items || []
 
   const statusConfig: Record<string, { label: string; color: string; bgColor: string }> = {
     em_andamento: { label: 'Em Andamento', color: 'text-warning', bgColor: 'bg-yellow-100' },
