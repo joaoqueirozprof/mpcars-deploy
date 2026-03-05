@@ -31,6 +31,7 @@ async def get_dashboard_data(
         - Client count
         - Active contracts
         - Current month revenue, expenses, profit
+        - Recent activity (last 10 contracts)
         - Alerts for expiring licenses, insurance, etc.
     """
     # Vehicle statistics
@@ -66,41 +67,60 @@ async def get_dashboard_data(
     receita_mes = Decimal("0.00")
     contratos_mes = db.query(Contrato).filter(
         Contrato.status == "Finalizado",
-        Contrato.data_inicio >= month_start,
-        Contrato.data_fim <= month_end
+        Contrato.data_inicio >= month_start.date(),
+        Contrato.data_fim <= month_end.date()
     ).all()
 
     for contrato in contratos_mes:
         dias = (contrato.data_fim - contrato.data_inicio).days
         if dias < 1:
             dias = 1
-        receita_mes += contrato.valor_diaria * dias
+        receita_mes += Decimal(str(contrato.valor_diaria * dias))
 
-    # Placeholder for expenses (would need DespesasVeiculo and DespesasLoja models)
+    # Calculate expenses from maintenance
     despesas_mes = Decimal("0.00")
+    # Placeholder for expenses (would need DespesasVeiculo and DespesasLoja models)
+
     lucro_mes = receita_mes - despesas_mes
+
+    # Get recent activities (last 10 contracts created or finalized)
+    contratos_recentes = db.query(Contrato).order_by(
+        Contrato.data_cadastro.desc()
+    ).limit(10).all()
+
+    atividades_recentes = []
+    for contrato in contratos_recentes:
+        atividades_recentes.append({
+            "id": contrato.id,
+            "tipo": f"Contrato {contrato.status.lower()}",
+            "cliente_id": contrato.cliente_id,
+            "veiculo_id": contrato.veiculo_id,
+            "status": contrato.status,
+            "data": contrato.data_saida.isoformat() if contrato.data_saida else None
+        })
 
     # Alerts
     alertas = []
 
     # Check for expiring licenses (CNH)
     cnh_expirando = db.query(Cliente).filter(
-        Cliente.data_cnh_validade.isnot(None),
-        Cliente.data_cnh_validade <= datetime.utcnow() + timedelta(days=30),
-        Cliente.data_cnh_validade > datetime.utcnow()
+        Cliente.cnh_validade.isnot(None),
+        Cliente.cnh_validade <= datetime.utcnow().date() + timedelta(days=30),
+        Cliente.cnh_validade > datetime.utcnow().date()
     ).count() or 0
 
     if cnh_expirando > 0:
         alertas.append({
             "tipo": "CNH Vencendo",
             "quantidade": cnh_expirando,
-            "mensagem": f"{cnh_expirando} cliente(s) com CNH vencendo em 30 dias"
+            "mensagem": f"{cnh_expirando} cliente(s) com CNH vencendo em 30 dias",
+            "severity": "warning"
         })
 
     # Check for CNH already expired
     cnh_vencida = db.query(Cliente).filter(
-        Cliente.data_cnh_validade.isnot(None),
-        Cliente.data_cnh_validade <= datetime.utcnow()
+        Cliente.cnh_validade.isnot(None),
+        Cliente.cnh_validade <= datetime.utcnow().date()
     ).count() or 0
 
     if cnh_vencida > 0:
@@ -116,7 +136,39 @@ async def get_dashboard_data(
         alertas.append({
             "tipo": "Veículos em Manutenção",
             "quantidade": veiculos_manutencao,
-            "mensagem": f"{veiculos_manutencao} veículo(s) em manutenção"
+            "mensagem": f"{veiculos_manutencao} veículo(s) em manutenção",
+            "severity": "info"
+        })
+
+    # Check for expiring insurance
+    from app.models import Seguro
+    seguros_expirando = db.query(func.count(Seguro.id)).filter(
+        Seguro.data_vencimento.isnot(None),
+        Seguro.data_vencimento <= datetime.utcnow().date() + timedelta(days=30),
+        Seguro.data_vencimento > datetime.utcnow().date(),
+        Seguro.status == "Ativo"
+    ).scalar() or 0
+
+    if seguros_expirando > 0:
+        alertas.append({
+            "tipo": "Seguros Vencendo",
+            "quantidade": seguros_expirando,
+            "mensagem": f"{seguros_expirando} seguro(s) vencendo em 30 dias",
+            "severity": "warning"
+        })
+
+    # Check for pending fines
+    from app.models import Multa
+    multas_pendentes = db.query(func.count(Multa.id)).filter(
+        Multa.status == "Pendente"
+    ).scalar() or 0
+
+    if multas_pendentes > 0:
+        alertas.append({
+            "tipo": "Multas Pendentes",
+            "quantidade": multas_pendentes,
+            "mensagem": f"{multas_pendentes} multa(s) pendente(s) de pagamento",
+            "severity": "warning"
         })
 
     return {
@@ -130,13 +182,15 @@ async def get_dashboard_data(
             "total": total_clientes
         },
         "contratos": {
-            "ativos": contratos_ativos
+            "ativos": contratos_ativos,
+            "total": db.query(func.count(Contrato.id)).scalar() or 0
         },
         "financeiro": {
             "receita_mes_atual": float(receita_mes),
             "despesas_mes_atual": float(despesas_mes),
             "lucro_mes_atual": float(lucro_mes)
         },
+        "atividades_recentes": atividades_recentes,
         "alertas": alertas,
         "timestamp": datetime.utcnow().isoformat()
     }

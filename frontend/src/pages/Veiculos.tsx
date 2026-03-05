@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { veiculosAPI } from '../services/api'
 import { Plus, Edit2, Trash2 } from 'lucide-react'
+import Modal from '../components/Modal'
 
 interface Veiculo {
   id: string
@@ -11,13 +12,44 @@ interface Veiculo {
   ano: number
   status: 'disponivel' | 'alugado' | 'manutencao'
   km: number
-  empresa: string
+  cor: string
+  empresa_id: string
+  chassi: string
+  renavam: string
+}
+
+interface FormData {
+  marca: string
+  modelo: string
+  placa: string
+  ano: number
+  km: number
+  cor: string
+  status: string
+  empresa_id: string
+  chassi: string
+  renavam: string
 }
 
 type StatusFilter = 'todos' | 'disponivel' | 'alugado' | 'manutencao'
 
 const Veiculos: React.FC = () => {
+  const queryClient = useQueryClient()
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('todos')
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingVeiculo, setEditingVeiculo] = useState<Veiculo | null>(null)
+  const [formData, setFormData] = useState<FormData>({
+    marca: '',
+    modelo: '',
+    placa: '',
+    ano: new Date().getFullYear(),
+    km: 0,
+    cor: '',
+    status: 'disponivel',
+    empresa_id: '',
+    chassi: '',
+    renavam: '',
+  })
 
   const { data: veiculosData, isLoading } = useQuery({
     queryKey: ['veiculos', statusFilter],
@@ -26,6 +58,32 @@ const Veiculos: React.FC = () => {
         status: statusFilter === 'todos' ? undefined : statusFilter,
       }),
     staleTime: 5 * 60 * 1000,
+  })
+
+  const createMutation = useMutation({
+    mutationFn: (data: FormData) => veiculosAPI.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['veiculos'] })
+      setIsModalOpen(false)
+      resetForm()
+    },
+  })
+
+  const updateMutation = useMutation({
+    mutationFn: (data: FormData) =>
+      editingVeiculo ? veiculosAPI.update(editingVeiculo.id, data) : Promise.reject(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['veiculos'] })
+      setIsModalOpen(false)
+      resetForm()
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => veiculosAPI.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['veiculos'] })
+    },
   })
 
   const veiculos: Veiculo[] = veiculosData?.data || []
@@ -55,11 +113,59 @@ const Veiculos: React.FC = () => {
     { value: 'manutencao', label: 'Manutenção' },
   ]
 
-  const handleDelete = (id: string) => {
-    if (confirm('Tem certeza que deseja deletar este veículo?')) {
-      console.log('Deletar veículo:', id)
+  const resetForm = () => {
+    setFormData({
+      marca: '',
+      modelo: '',
+      placa: '',
+      ano: new Date().getFullYear(),
+      km: 0,
+      cor: '',
+      status: 'disponivel',
+      empresa_id: '',
+      chassi: '',
+      renavam: '',
+    })
+    setEditingVeiculo(null)
+  }
+
+  const handleOpenModal = (veiculo?: Veiculo) => {
+    if (veiculo) {
+      setEditingVeiculo(veiculo)
+      setFormData({
+        marca: veiculo.marca,
+        modelo: veiculo.modelo,
+        placa: veiculo.placa,
+        ano: veiculo.ano,
+        km: veiculo.km,
+        cor: veiculo.cor,
+        status: veiculo.status,
+        empresa_id: veiculo.empresa_id,
+        chassi: veiculo.chassi,
+        renavam: veiculo.renavam,
+      })
+    } else {
+      resetForm()
+    }
+    setIsModalOpen(true)
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (editingVeiculo) {
+      updateMutation.mutate(formData)
+    } else {
+      createMutation.mutate(formData)
     }
   }
+
+  const handleDelete = (id: string) => {
+    if (confirm('Tem certeza que deseja deletar este veículo?')) {
+      deleteMutation.mutate(id)
+    }
+  }
+
+  const isLoading2 = createMutation.isPending || updateMutation.isPending
 
   return (
     <div className="p-6 space-y-6">
@@ -69,7 +175,10 @@ const Veiculos: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900">Veículos</h1>
           <p className="text-gray-600 mt-1">Gestão da frota de veículos</p>
         </div>
-        <button className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg font-medium flex items-center gap-2 transition-colors">
+        <button
+          onClick={() => handleOpenModal()}
+          className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg font-medium flex items-center gap-2 transition-colors"
+        >
           <Plus size={20} />
           Novo Veículo
         </button>
@@ -135,8 +244,8 @@ const Veiculos: React.FC = () => {
                   </div>
 
                   <div>
-                    <p className="text-sm text-gray-600">Empresa</p>
-                    <p className="text-sm font-medium">{veiculo.empresa}</p>
+                    <p className="text-sm text-gray-600">Cor</p>
+                    <p className="text-sm font-medium">{veiculo.cor}</p>
                   </div>
 
                   <div className="pt-2">
@@ -148,7 +257,10 @@ const Veiculos: React.FC = () => {
                   </div>
 
                   <div className="flex gap-2 pt-4 border-t">
-                    <button className="flex-1 px-3 py-2 text-primary hover:bg-blue-50 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1">
+                    <button
+                      onClick={() => handleOpenModal(veiculo)}
+                      className="flex-1 px-3 py-2 text-primary hover:bg-blue-50 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1"
+                    >
                       <Edit2 size={16} />
                       Editar
                     </button>
@@ -166,6 +278,156 @@ const Veiculos: React.FC = () => {
           })
         )}
       </div>
+
+      {/* Modal */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false)
+          resetForm()
+        }}
+        title={editingVeiculo ? 'Editar Veículo' : 'Novo Veículo'}
+        size="lg"
+      >
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Marca</label>
+              <input
+                type="text"
+                value={formData.marca}
+                onChange={(e) => setFormData({ ...formData, marca: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Modelo</label>
+              <input
+                type="text"
+                value={formData.modelo}
+                onChange={(e) => setFormData({ ...formData, modelo: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Placa</label>
+              <input
+                type="text"
+                value={formData.placa}
+                onChange={(e) => setFormData({ ...formData, placa: e.target.value.toUpperCase() })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent uppercase"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Ano</label>
+              <input
+                type="number"
+                value={formData.ano}
+                onChange={(e) => setFormData({ ...formData, ano: parseInt(e.target.value) })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">KM</label>
+              <input
+                type="number"
+                value={formData.km}
+                onChange={(e) => setFormData({ ...formData, km: parseInt(e.target.value) })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Cor</label>
+              <input
+                type="text"
+                value={formData.cor}
+                onChange={(e) => setFormData({ ...formData, cor: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <select
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              >
+                <option value="disponivel">Disponível</option>
+                <option value="alugado">Alugado</option>
+                <option value="manutencao">Manutenção</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Empresa ID</label>
+              <input
+                type="text"
+                value={formData.empresa_id}
+                onChange={(e) => setFormData({ ...formData, empresa_id: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Chassi</label>
+              <input
+                type="text"
+                value={formData.chassi}
+                onChange={(e) => setFormData({ ...formData, chassi: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">RENAVAM</label>
+              <input
+                type="text"
+                value={formData.renavam}
+                onChange={(e) => setFormData({ ...formData, renavam: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-4 border-t">
+            <button
+              type="button"
+              onClick={() => {
+                setIsModalOpen(false)
+                resetForm()
+              }}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading2}
+              className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark font-medium transition-colors disabled:opacity-50"
+            >
+              {isLoading2 ? 'Salvando...' : 'Salvar'}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   )
 }

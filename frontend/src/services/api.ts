@@ -112,4 +112,76 @@ export const financeiroAPI = {
   delete: (id: string) => api.delete(`/financeiro/${id}`),
 }
 
+// Seguros API calls
+export const segurosAPI = {
+  list: (params?: Record<string, any>) =>
+    api.get('/seguros', { params }),
+  get: (id: string) => api.get(`/seguros/${id}`),
+  create: (data: Record<string, any>) =>
+    api.post('/seguros', data),
+  update: (id: string, data: Record<string, any>) =>
+    api.put(`/seguros/${id}`, data),
+  delete: (id: string) => api.delete(`/seguros/${id}`),
+}
+
+// IPVA API calls
+export const ipvaAPI = {
+  list: (params?: Record<string, any>) =>
+    api.get('/ipva', { params }),
+  get: (id: string) => api.get(`/ipva/${id}`),
+  create: (data: Record<string, any>) =>
+    api.post('/ipva', data),
+  update: (id: string, data: Record<string, any>) =>
+    api.put(`/ipva/${id}`, data),
+  delete: (id: string) => api.delete(`/ipva/${id}`),
+}
+
+// Multas API calls
+export const multasAPI = {
+  list: (params?: Record<string, any>) =>
+    api.get('/multas', { params }),
+  get: (id: string) => api.get(`/multas/${id}`),
+  create: (data: Record<string, any>) =>
+    api.post('/multas', data),
+  update: (id: string, data: Record<string, any>) =>
+    api.put(`/multas/${id}`, data),
+  delete: (id: string) => api.delete(`/multas/${id}`),
+}
+
+// Manutenções API calls
+export const manutencoesAPI = {
+  list: (params?: Record<string, any>) =>
+    api.get('/manutencoes', { params }),
+  get: (id: string) => api.get(`/manutencoes/${id}`),
+  create: (data: Record<string, any>) =>
+    api.post('/manutencoes', data),
+  update: (id: string, data: Record<string, any>) =>
+    api.put(`/manutencoes/${id}`, data),
+  delete: (id: string) => api.delete(`/manutencoes/${id}`),
+}
+
+// Reservas API calls
+export const reservasAPI = {
+  list: (params?: Record<string, any>) =>
+    api.get('/reservas', { params }),
+  get: (id: string) => api.get(`/reservas/${id}`),
+  create: (data: Record<string, any>) =>
+    api.post('/reservas', data),
+  update: (id: string, data: Record<string, any>) =>
+    api.put(`/reservas/${id}`, data),
+  delete: (id: string) => api.delete(`/reservas/${id}`),
+}
+
+// Relatórios API calls
+export const relatoriosAPI = {
+  list: (params?: Record<string, any>) =>
+    api.get('/relatorios', { params }),
+  get: (id: string) => api.get(`/relatorios/${id}`),
+  create: (data: Record<string, any>) =>
+    api.post('/relatorios', data),
+  update: (id: string, data: Record<string, any>) =>
+    api.put(`/relatorios/${id}`, data),
+  delete: (id: string) => api.delete(`/relatorios/${id}`),
+}
+
 export default api
